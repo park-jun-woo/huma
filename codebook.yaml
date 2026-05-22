@@ -1,0 +1,22 @@
+required:
+  feature:
+    ratchet: "core coverage-ratchet loop (next/verify)"
+    scan: "endpoint extraction from source code"
+    verify: "hurl test execution and result evaluation"
+    coverage: "code coverage measurement and parsing"
+    prompt: "agent instruction generation"
+    config: "configuration loading and defaults"
+    session: "session state persistence and management"
+    adapter: "server lifecycle and coverage adapter"
+    runner: "hurl file discovery and execution"
+    source: "source code reading and handler extraction"
+    cli: "CLI entrypoint and root command"
+  type:
+    command: "cobra command entrypoint"
+    engine: "core logic orchestration"
+    model: "data type definition"
+    parser: "file or text parsing"
+    adapter: "external tool integration"
+    builder: "string/prompt construction"
+    helper: "utility function"
+    reader: "file reading"

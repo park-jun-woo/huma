@@ -1,3 +1,5 @@
+//ff:func feature=verify type=command control=sequence
+//ff:what Defines the verify command that runs hurl tests and advances on pass
 package cmd
 
 import (

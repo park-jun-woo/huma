@@ -1,3 +1,5 @@
+//ff:func feature=session type=command control=sequence
+//ff:what Defines the status command that shows test progress summary
 package cmd
 
 import (

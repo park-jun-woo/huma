@@ -1,7 +1,8 @@
+//ff:func feature=source type=reader control=sequence
+//ff:what Reads a source file and extracts the handler function body with line range
 package source
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"regexp"
@@ -18,53 +19,18 @@ func ReadHandler(file string, handlerName string) (string, int, int, error) {
 	}
 	defer f.Close()
 
-	// Match func definitions: "func HandlerName(" or "func (r *Type) HandlerName("
 	pattern := regexp.MustCompile(`^func\s+(\([^)]*\)\s*)?` + regexp.QuoteMeta(handlerName) + `\s*\(`)
 
-	var lines []string
-	scanner := bufio.NewScanner(f)
-	lineNum := 0
-	startLine := 0
-	collecting := false
-
-	for scanner.Scan() {
-		lineNum++
-		line := scanner.Text()
-
-		if collecting {
-			// Stop at next top-level func definition (column 0)
-			if strings.HasPrefix(line, "func ") && lineNum > startLine {
-				break
-			}
-			lines = append(lines, line)
-			continue
-		}
-
-		if pattern.MatchString(line) {
-			startLine = lineNum
-			collecting = true
-			lines = append(lines, line)
-		}
+	lines, startLine, err := collectHandler(f, pattern)
+	if err != nil {
+		return "", 0, 0, err
 	}
 
-	if err := scanner.Err(); err != nil {
-		return "", 0, 0, fmt.Errorf("scan source file: %w", err)
-	}
-
-	if !collecting {
+	if startLine == 0 {
 		return "", 0, 0, fmt.Errorf("handler %q not found in %s", handlerName, file)
 	}
 
-	// Trim trailing blank lines and comments that belong to the next function
-	for len(lines) > 0 {
-		trimmed := strings.TrimSpace(lines[len(lines)-1])
-		if trimmed == "" || strings.HasPrefix(trimmed, "//") {
-			lines = lines[:len(lines)-1]
-			continue
-		}
-		break
-	}
-
+	lines = trimTrailing(lines)
 	endLine := startLine + len(lines) - 1
 	return strings.Join(lines, "\n"), startLine, endLine, nil
 }

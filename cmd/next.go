@@ -1,3 +1,5 @@
+//ff:func feature=ratchet type=command control=sequence
+//ff:what Defines the next command that shows the next untested endpoint or verifies the current one
 package cmd
 
 import (

@@ -1,3 +1,5 @@
+//ff:func feature=prompt type=command control=sequence
+//ff:what Defines the prompt command that outputs agent instruction for the current TODO endpoint
 package cmd
 
 import (

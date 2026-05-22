@@ -1,3 +1,5 @@
+//ff:func feature=scan type=command control=sequence
+//ff:what Defines the scan command that indexes all API endpoints from source code
 package cmd
 
 import (

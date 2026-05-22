@@ -1,3 +1,5 @@
+//ff:func feature=adapter type=engine control=sequence
+//ff:what Executes the full adapter lifecycle: reset, start, run hurl, stop, and collect coverage
 package adapter
 
 import (

@@ -1,3 +1,5 @@
+//ff:func feature=cli type=command control=sequence
+//ff:what Defines the root cobra command and Execute entrypoint for hurlfill CLI
 package cmd
 
 import (
