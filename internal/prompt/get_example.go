@@ -4,15 +4,15 @@ package prompt
 
 import "fmt"
 
-func getExample(examplePath, path string) string {
+func getExample(examplePath, path, urlVar string) string {
 	if hasParam(path) {
-		return fmt.Sprintf(`GET {{base_url}}%s
+		return fmt.Sprintf(`GET {{%s}}%s
 HTTP 200
 [Asserts]
-jsonpath "$.id" exists`, examplePath)
+jsonpath "$.id" exists`, urlVar, examplePath)
 	}
-	return fmt.Sprintf(`GET {{base_url}}%s
+	return fmt.Sprintf(`GET {{%s}}%s
 HTTP 200
 [Asserts]
-jsonpath "$" count > 0`, examplePath)
+jsonpath "$" count > 0`, urlVar, examplePath)
 }

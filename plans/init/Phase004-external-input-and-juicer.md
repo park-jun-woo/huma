@@ -76,11 +76,21 @@ hurl_variables:
 
 runner가 모든 변수를 `--variable key=value`로 전달한다.
 
-### 3. internal/scanner/ 제거
+### 3. internal/scanner/ 리팩토링
 
-자체 regex 스캐너를 제거한다. 외부 입력으로 완전 대체.
-`internal/scanner/scanner.go`의 `Endpoint` 구조체는 유지하되 `Scan()` 함수를 제거하고
-`ParseEndpoints(data []byte) ([]Endpoint, error)` 로 교체한다.
+자체 regex 스캐너 함수를 제거한다. 외부 입력으로 완전 대체.
+`internal/scanner/endpoint.go`의 Endpoint 구조체는 유지한다.
+
+제거 대상 파일:
+- `internal/scanner/scan.go` — Scan() 함수
+- `internal/scanner/scan_file.go` — scanFile() 함수
+- `internal/scanner/parse_route.go` — parseRoute() 함수
+- `internal/scanner/extract_handler.go` — extractHandler() 함수
+- `internal/scanner/is_go_source.go` — isGoSource() 함수
+- `internal/scanner/skip_dir.go` — skipDir() 함수
+
+신규 파일:
+- `internal/scanner/parse_endpoints.go` — ParseEndpoints(data []byte) ([]Endpoint, error)
 
 ### 4. juicer 출력 → hurlfill 입력 변환
 
@@ -108,15 +118,24 @@ hurlfill status    # 108개 엔드포인트, 102개 기존 hurl 매칭 확인
 hurlfill next      # 남은 6개에 대해 래칫 시작
 ```
 
+주의: `hurlfill next`로 hurl 테스트를 실행하려면 gozhip 서버가 기동 중이어야 한다.
+scan + status는 서버 없이 동작한다.
+
 ## 파일 목록
 
 | 파일 | 상태 |
 |------|------|
 | `cmd/scan.go` | 수정 — `--from` 플래그, 파일/stdin 파싱 |
-| `internal/scanner/scanner.go` | 수정 — `Scan()` 제거, `ParseEndpoints()` 추가 |
-| `internal/config/config.go` | 수정 — `HurlVariables map[string]string` 추가 |
-| `internal/runner/runner.go` | 수정 — 변수 목록을 `--variable`로 전달 |
-| `internal/prompt/prompt.go` | 수정 — 변수명을 config에서 읽어 예시에 반영 |
+| `internal/scanner/parse_endpoints.go` | 신규 — JSON 파싱 + ID 생성 |
+| `internal/scanner/scan.go` | 삭제 |
+| `internal/scanner/scan_file.go` | 삭제 |
+| `internal/scanner/parse_route.go` | 삭제 |
+| `internal/scanner/extract_handler.go` | 삭제 |
+| `internal/scanner/is_go_source.go` | 삭제 |
+| `internal/scanner/skip_dir.go` | 삭제 |
+| `internal/config/config_type.go` | 수정 — `HurlVariables map[string]string` 추가 |
+| `internal/runner/run.go` | 수정 — hurl_variables를 `--variable`로 전달 |
+| `internal/prompt/hurl_example.go` | 수정 — 변수명을 config에서 읽어 예시에 반영 |
 
 ## 완료 기준
 
@@ -124,3 +143,5 @@ hurlfill next      # 남은 6개에 대해 래칫 시작
 - [ ] `juicer scan -json | hurlfill scan --from -` 파이프가 작동한다
 - [ ] hurlfill.yaml의 hurl_variables가 runner에 전달된다
 - [ ] gozhip에서 `hurlfill status` 실행 시 엔드포인트 수와 기존 hurl 매칭이 정확하다
+- [ ] go test 전부 통과
+- [ ] filefunc validate 0 violations

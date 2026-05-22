@@ -26,7 +26,7 @@ func GetUser(c interface{}) {
 		Handler: "GetUser", Source: handlerFile, Line: 3,
 	}
 
-	result := TodoPrompt(ep, "hurl")
+	result := TodoPrompt(ep, "hurl", "base_url")
 	if !strings.Contains(result, "# TODO  GET /users/:id") {
 		t.Fatal("expected TODO header")
 	}
@@ -47,7 +47,7 @@ func TestTodoPrompt_WithoutHandler(t *testing.T) {
 		Handler: "CreateUser", Source: "/nonexistent/file.go", Line: 1,
 	}
 
-	result := TodoPrompt(ep, "hurl")
+	result := TodoPrompt(ep, "hurl", "base_url")
 	if !strings.Contains(result, "# TODO  POST /users") {
 		t.Fatal("expected TODO header")
 	}
@@ -149,7 +149,7 @@ func TestPercent(t *testing.T) {
 }
 
 func TestHurlExample_GET(t *testing.T) {
-	result := hurlExample("GET", "/users")
+	result := hurlExample("GET", "/users", "base_url")
 	if !strings.Contains(result, "GET {{base_url}}/users") {
 		t.Fatal("expected GET template")
 	}
@@ -159,7 +159,7 @@ func TestHurlExample_GET(t *testing.T) {
 }
 
 func TestHurlExample_GETWithParam(t *testing.T) {
-	result := hurlExample("GET", "/users/:id")
+	result := hurlExample("GET", "/users/:id", "base_url")
 	if !strings.Contains(result, "GET {{base_url}}/users/1") {
 		t.Fatal("expected GET with param replaced")
 	}
@@ -169,7 +169,7 @@ func TestHurlExample_GETWithParam(t *testing.T) {
 }
 
 func TestHurlExample_POST(t *testing.T) {
-	result := hurlExample("POST", "/users")
+	result := hurlExample("POST", "/users", "base_url")
 	if !strings.Contains(result, "POST {{base_url}}/users") {
 		t.Fatal("expected POST template")
 	}
@@ -179,21 +179,21 @@ func TestHurlExample_POST(t *testing.T) {
 }
 
 func TestHurlExample_PUT(t *testing.T) {
-	result := hurlExample("PUT", "/users/:id")
+	result := hurlExample("PUT", "/users/:id", "base_url")
 	if !strings.Contains(result, "PUT {{base_url}}/users/1") {
 		t.Fatal("expected PUT template")
 	}
 }
 
 func TestHurlExample_PATCH(t *testing.T) {
-	result := hurlExample("PATCH", "/users/:id")
+	result := hurlExample("PATCH", "/users/:id", "base_url")
 	if !strings.Contains(result, "PATCH {{base_url}}/users/1") {
 		t.Fatal("expected PATCH template")
 	}
 }
 
 func TestHurlExample_DELETE(t *testing.T) {
-	result := hurlExample("DELETE", "/users/:id")
+	result := hurlExample("DELETE", "/users/:id", "base_url")
 	if !strings.Contains(result, "DELETE {{base_url}}/users/1") {
 		t.Fatal("expected DELETE template")
 	}
@@ -203,7 +203,7 @@ func TestHurlExample_DELETE(t *testing.T) {
 }
 
 func TestHurlExample_HEAD(t *testing.T) {
-	result := hurlExample("HEAD", "/health")
+	result := hurlExample("HEAD", "/health", "base_url")
 	if !strings.Contains(result, "HEAD {{base_url}}/health") {
 		t.Fatal("expected HEAD template")
 	}

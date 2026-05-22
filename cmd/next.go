@@ -40,17 +40,17 @@ var nextCmd = &cobra.Command{
 		hurl := runner.FindHurlFile(ep, cfg.HurlDir)
 		if hurl == "" {
 			// TODO: no .hurl file yet
-			fmt.Print(prompt.TodoPrompt(ep, cfg.HurlDir))
+			fmt.Print(prompt.TodoPrompt(ep, cfg.HurlDir, cfg.URLVar()))
 			return nil
 		}
 
 		// Coverage mode: server config is present
-		if cfg.Server.Build != "" {
+		if cfg.Server.Start != "" {
 			return runWithCoverage(cfg, sess, ep, hurl)
 		}
 
 		// No coverage mode — behave as before (hurl pass/fail only)
-		result, err := runner.Run(hurl, cfg.BaseURL)
+		result, err := runner.Run(hurl, cfg.HurlVariables)
 		if err != nil {
 			return fmt.Errorf("hurl run failed: %w", err)
 		}
@@ -68,7 +68,7 @@ var nextCmd = &cobra.Command{
 				total, pass, _ := sess.Stats()
 				fmt.Print(prompt.AllComplete(pass, total))
 			} else {
-				fmt.Print(prompt.TodoPrompt(next, cfg.HurlDir))
+				fmt.Print(prompt.TodoPrompt(next, cfg.HurlDir, cfg.URLVar()))
 			}
 		} else {
 			fmt.Print(prompt.FailPrompt(ep, hurl, result.Feedback))
@@ -83,6 +83,9 @@ var adapterRunFn = adapter.RunWithCoverage
 
 // newAdapterFn allows tests to replace adapter.NewGoAdapter.
 var newAdapterFn = func(cfg *config.Config) adapter.Adapter {
+	if cfg.Scan.Lang == "python" {
+		return adapter.NewPythonAdapter(cfg)
+	}
 	return adapter.NewGoAdapter(cfg)
 }
 
@@ -94,7 +97,7 @@ func runWithCoverage(cfg *config.Config, sess *session.Session, ep *scanner.Endp
 		return fmt.Errorf("build: %w", err)
 	}
 
-	result, covResult, err := adapterRunFn(a, hurl, cfg.BaseURL, ep.Source, ep.Handler)
+	result, covResult, err := adapterRunFn(a, hurl, cfg.HurlVariables, ep.Source, ep.Handler)
 	if err != nil {
 		return err
 	}
@@ -118,7 +121,7 @@ func runWithCoverage(cfg *config.Config, sess *session.Session, ep *scanner.Endp
 			total, pass, _ := sess.Stats()
 			fmt.Print(prompt.AllComplete(pass, total))
 		} else {
-			fmt.Print(prompt.TodoPrompt(next, cfg.HurlDir))
+			fmt.Print(prompt.TodoPrompt(next, cfg.HurlDir, cfg.URLVar()))
 		}
 		return nil
 	}
@@ -138,7 +141,7 @@ func runWithCoverage(cfg *config.Config, sess *session.Session, ep *scanner.Endp
 			total, pass, _ := sess.Stats()
 			fmt.Print(prompt.AllComplete(pass, total))
 		} else {
-			fmt.Print(prompt.TodoPrompt(next, cfg.HurlDir))
+			fmt.Print(prompt.TodoPrompt(next, cfg.HurlDir, cfg.URLVar()))
 		}
 		return nil
 	}

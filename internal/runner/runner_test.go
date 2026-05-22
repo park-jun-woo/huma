@@ -62,7 +62,7 @@ func TestRun_Pass(t *testing.T) {
 	content := fmt.Sprintf("GET %s/test\nHTTP 200\n", ts.URL)
 	os.WriteFile(hurlFile, []byte(content), 0o644)
 
-	result, err := Run(hurlFile, ts.URL)
+	result, err := Run(hurlFile, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -82,7 +82,7 @@ func TestRun_Fail(t *testing.T) {
 	content := fmt.Sprintf("GET %s/test\nHTTP 200\n", ts.URL)
 	os.WriteFile(hurlFile, []byte(content), 0o644)
 
-	result, err := Run(hurlFile, ts.URL)
+	result, err := Run(hurlFile, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -100,7 +100,7 @@ func TestRun_HurlNotFound(t *testing.T) {
 	os.Setenv("PATH", "/nonexistent")
 	t.Cleanup(func() { os.Setenv("PATH", origPath) })
 
-	_, err := Run("test.hurl", "http://localhost:8080")
+	_, err := Run("test.hurl", nil)
 	if err == nil {
 		t.Fatal("expected error when hurl is not in PATH")
 	}

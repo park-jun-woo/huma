@@ -12,7 +12,7 @@ import (
 )
 
 // TodoPrompt builds the agent instruction for a TODO endpoint.
-func TodoPrompt(ep *scanner.Endpoint, hurlDir string) string {
+func TodoPrompt(ep *scanner.Endpoint, hurlDir, urlVar string) string {
 	var b strings.Builder
 
 	b.WriteString(fmt.Sprintf("# TODO  %s %s\n", ep.Method, ep.Path))
@@ -27,7 +27,7 @@ func TodoPrompt(ep *scanner.Endpoint, hurlDir string) string {
 	}
 
 	b.WriteString("\n## Hurl example\n\n")
-	b.WriteString(hurlExample(ep.Method, ep.Path))
+	b.WriteString(hurlExample(ep.Method, ep.Path, urlVar))
 	b.WriteString("\n")
 
 	hurlFile := runner.HurlFileName(ep, hurlDir)

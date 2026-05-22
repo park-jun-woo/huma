@@ -32,7 +32,7 @@ func TestVerifyWithCoverage_RunError(t *testing.T) {
 	tmpDir := withSessionDir(t)
 	ma := &mockAdapter{}
 	withMockAdapter(t, ma)
-	withMockRunFn(t, func(a adapter.Adapter, hurl, base, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
 		return nil, nil, errors.New("run failed")
 	})
 
@@ -50,7 +50,7 @@ func TestVerifyWithCoverage_HurlFail(t *testing.T) {
 	tmpDir := withSessionDir(t)
 	ma := &mockAdapter{}
 	withMockAdapter(t, ma)
-	withMockRunFn(t, func(a adapter.Adapter, hurl, base, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
 		return &runner.Result{Pass: false, Feedback: "assertion failed"}, nil, nil
 	})
 
@@ -72,7 +72,7 @@ func TestVerifyWithCoverage_PassNilCoverage(t *testing.T) {
 	tmpDir := withSessionDir(t)
 	ma := &mockAdapter{}
 	withMockAdapter(t, ma)
-	withMockRunFn(t, func(a adapter.Adapter, hurl, base, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
 		return &runner.Result{Pass: true}, nil, nil
 	})
 
@@ -95,7 +95,7 @@ func TestVerifyWithCoverage_Pass100Pct(t *testing.T) {
 	tmpDir := withSessionDir(t)
 	ma := &mockAdapter{}
 	withMockAdapter(t, ma)
-	withMockRunFn(t, func(a adapter.Adapter, hurl, base, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
 		return &runner.Result{Pass: true}, &adapter.CoverageResult{Covered: 10, Total: 10, Percent: 100}, nil
 	})
 
@@ -118,7 +118,7 @@ func TestVerifyWithCoverage_PassZeroTotal(t *testing.T) {
 	tmpDir := withSessionDir(t)
 	ma := &mockAdapter{}
 	withMockAdapter(t, ma)
-	withMockRunFn(t, func(a adapter.Adapter, hurl, base, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
 		return &runner.Result{Pass: true}, &adapter.CoverageResult{Covered: 0, Total: 0, Percent: 0}, nil
 	})
 
@@ -141,7 +141,7 @@ func TestVerifyWithCoverage_Stalled(t *testing.T) {
 	tmpDir := withSessionDir(t)
 	ma := &mockAdapter{}
 	withMockAdapter(t, ma)
-	withMockRunFn(t, func(a adapter.Adapter, hurl, base, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
 		return &runner.Result{Pass: true}, &adapter.CoverageResult{Covered: 5, Total: 10, Percent: 50}, nil
 	})
 
@@ -170,7 +170,7 @@ func TestVerifyWithCoverage_Improve(t *testing.T) {
 	tmpDir := withSessionDir(t)
 	ma := &mockAdapter{}
 	withMockAdapter(t, ma)
-	withMockRunFn(t, func(a adapter.Adapter, hurl, base, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
 		return &runner.Result{Pass: true}, &adapter.CoverageResult{Covered: 7, Total: 10, Percent: 70}, nil
 	})
 
@@ -197,7 +197,7 @@ func TestVerifyWithCoverage_SaveErrorOnPass(t *testing.T) {
 	withSessionDir(t)
 	ma := &mockAdapter{}
 	withMockAdapter(t, ma)
-	withMockRunFn(t, func(a adapter.Adapter, hurl, base, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
 		return &runner.Result{Pass: true}, nil, nil
 	})
 
@@ -220,7 +220,7 @@ func TestVerifyWithCoverage_SaveErrorOnStalled(t *testing.T) {
 	withSessionDir(t)
 	ma := &mockAdapter{}
 	withMockAdapter(t, ma)
-	withMockRunFn(t, func(a adapter.Adapter, hurl, base, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
 		return &runner.Result{Pass: true}, &adapter.CoverageResult{Covered: 5, Total: 10, Percent: 50}, nil
 	})
 
@@ -244,7 +244,7 @@ func TestVerifyWithCoverage_SaveErrorOnImprove(t *testing.T) {
 	withSessionDir(t)
 	ma := &mockAdapter{}
 	withMockAdapter(t, ma)
-	withMockRunFn(t, func(a adapter.Adapter, hurl, base, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
 		return &runner.Result{Pass: true}, &adapter.CoverageResult{Covered: 7, Total: 10, Percent: 70}, nil
 	})
 

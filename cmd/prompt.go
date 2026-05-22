@@ -33,7 +33,7 @@ var promptCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		fmt.Print(prompt.TodoPrompt(ep, cfg.HurlDir))
+		fmt.Print(prompt.TodoPrompt(ep, cfg.HurlDir, cfg.URLVar()))
 		return nil
 	},
 }

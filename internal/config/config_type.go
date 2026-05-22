@@ -3,8 +3,9 @@
 package config
 
 type Config struct {
-	BaseURL string       `yaml:"base_url"`
-	HurlDir string       `yaml:"hurl_dir"`
-	Scan    ScanConfig   `yaml:"scan"`
-	Server  ServerConfig `yaml:"server"`
+	BaseURL       string            `yaml:"base_url"`
+	HurlDir       string            `yaml:"hurl_dir"`
+	HurlVariables map[string]string `yaml:"hurl_variables"`
+	Scan          ScanConfig        `yaml:"scan"`
+	Server        ServerConfig      `yaml:"server"`
 }

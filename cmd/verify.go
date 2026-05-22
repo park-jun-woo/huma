@@ -44,12 +44,12 @@ var verifyCmd = &cobra.Command{
 		}
 
 		// Coverage mode: server config is present
-		if cfg.Server.Build != "" {
+		if cfg.Server.Start != "" {
 			return verifyWithCoverage(cfg, sess, ep, hurl)
 		}
 
 		// No coverage mode — behave as before
-		result, err := runner.Run(hurl, cfg.BaseURL)
+		result, err := runner.Run(hurl, cfg.HurlVariables)
 		if err != nil {
 			return fmt.Errorf("hurl run failed: %w", err)
 		}
@@ -76,7 +76,7 @@ func verifyWithCoverage(cfg *config.Config, sess *session.Session, ep *scanner.E
 		return fmt.Errorf("build: %w", err)
 	}
 
-	result, covResult, err := adapterRunFn(a, hurl, cfg.BaseURL, ep.Source, ep.Handler)
+	result, covResult, err := adapterRunFn(a, hurl, cfg.HurlVariables, ep.Source, ep.Handler)
 	if err != nil {
 		return err
 	}

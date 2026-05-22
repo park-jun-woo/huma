@@ -67,7 +67,7 @@ func withMockAdapter(t *testing.T, ma adapter.Adapter) {
 }
 
 // withMockRunFn replaces adapterRunFn for tests and restores it after.
-func withMockRunFn(t *testing.T, fn func(adapter.Adapter, string, string, string, string) (*runner.Result, *adapter.CoverageResult, error)) {
+func withMockRunFn(t *testing.T, fn func(adapter.Adapter, string, map[string]string, string, string) (*runner.Result, *adapter.CoverageResult, error)) {
 	t.Helper()
 	orig := adapterRunFn
 	t.Cleanup(func() { adapterRunFn = orig })
@@ -96,7 +96,7 @@ func TestRunWithCoverage_RunError(t *testing.T) {
 	tmpDir := withSessionDir(t)
 	ma := &mockAdapter{}
 	withMockAdapter(t, ma)
-	withMockRunFn(t, func(a adapter.Adapter, hurl, base, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
 		return nil, nil, errors.New("run failed")
 	})
 
@@ -117,7 +117,7 @@ func TestRunWithCoverage_HurlFail(t *testing.T) {
 	tmpDir := withSessionDir(t)
 	ma := &mockAdapter{}
 	withMockAdapter(t, ma)
-	withMockRunFn(t, func(a adapter.Adapter, hurl, base, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
 		return &runner.Result{Pass: false, Feedback: "assertion failed"}, nil, nil
 	})
 
@@ -140,7 +140,7 @@ func TestRunWithCoverage_PassWithNilCoverage(t *testing.T) {
 	tmpDir := withSessionDir(t)
 	ma := &mockAdapter{}
 	withMockAdapter(t, ma)
-	withMockRunFn(t, func(a adapter.Adapter, hurl, base, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
 		return &runner.Result{Pass: true}, nil, nil
 	})
 
@@ -164,7 +164,7 @@ func TestRunWithCoverage_PassWith100Coverage(t *testing.T) {
 	tmpDir := withSessionDir(t)
 	ma := &mockAdapter{}
 	withMockAdapter(t, ma)
-	withMockRunFn(t, func(a adapter.Adapter, hurl, base, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
 		return &runner.Result{Pass: true}, &adapter.CoverageResult{Covered: 10, Total: 10, Percent: 100}, nil
 	})
 
@@ -187,7 +187,7 @@ func TestRunWithCoverage_PassWithZeroTotal(t *testing.T) {
 	tmpDir := withSessionDir(t)
 	ma := &mockAdapter{}
 	withMockAdapter(t, ma)
-	withMockRunFn(t, func(a adapter.Adapter, hurl, base, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
 		return &runner.Result{Pass: true}, &adapter.CoverageResult{Covered: 0, Total: 0, Percent: 0}, nil
 	})
 
@@ -211,7 +211,7 @@ func TestRunWithCoverage_StalledImprovement(t *testing.T) {
 	ma := &mockAdapter{}
 	withMockAdapter(t, ma)
 	// Return 50% coverage — same as PrevCoverage, so stalled
-	withMockRunFn(t, func(a adapter.Adapter, hurl, base, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
 		return &runner.Result{Pass: true}, &adapter.CoverageResult{Covered: 5, Total: 10, Percent: 50}, nil
 	})
 
@@ -246,7 +246,7 @@ func TestRunWithCoverage_ImprovedCoverage(t *testing.T) {
 	tmpDir := withSessionDir(t)
 	ma := &mockAdapter{}
 	withMockAdapter(t, ma)
-	withMockRunFn(t, func(a adapter.Adapter, hurl, base, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
 		return &runner.Result{Pass: true}, &adapter.CoverageResult{Covered: 7, Total: 10, Percent: 70}, nil
 	})
 
@@ -274,7 +274,7 @@ func TestRunWithCoverage_PassAllComplete(t *testing.T) {
 	tmpDir := withSessionDir(t)
 	ma := &mockAdapter{}
 	withMockAdapter(t, ma)
-	withMockRunFn(t, func(a adapter.Adapter, hurl, base, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
 		return &runner.Result{Pass: true}, nil, nil
 	})
 
@@ -296,7 +296,7 @@ func TestRunWithCoverage_PassThenNextTodo(t *testing.T) {
 	tmpDir := withSessionDir(t)
 	ma := &mockAdapter{}
 	withMockAdapter(t, ma)
-	withMockRunFn(t, func(a adapter.Adapter, hurl, base, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
 		return &runner.Result{Pass: true}, nil, nil
 	})
 
@@ -322,7 +322,7 @@ func TestRunWithCoverage_StalledThenAllComplete(t *testing.T) {
 	tmpDir := withSessionDir(t)
 	ma := &mockAdapter{}
 	withMockAdapter(t, ma)
-	withMockRunFn(t, func(a adapter.Adapter, hurl, base, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
 		return &runner.Result{Pass: true}, &adapter.CoverageResult{Covered: 5, Total: 10, Percent: 50}, nil
 	})
 
@@ -347,7 +347,7 @@ func TestRunWithCoverage_StalledThenNextTodo(t *testing.T) {
 	tmpDir := withSessionDir(t)
 	ma := &mockAdapter{}
 	withMockAdapter(t, ma)
-	withMockRunFn(t, func(a adapter.Adapter, hurl, base, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
 		return &runner.Result{Pass: true}, &adapter.CoverageResult{Covered: 5, Total: 10, Percent: 50}, nil
 	})
 

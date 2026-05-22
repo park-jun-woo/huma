@@ -12,7 +12,7 @@ import (
 // RunWithCoverage executes the full adapter lifecycle: reset, start, wait,
 // run hurl test, stop, and collect coverage data.
 // Returns the hurl result, coverage result (nil if hurl failed), and any error.
-func RunWithCoverage(a Adapter, hurlPath, baseURL, handlerFile, handlerName string) (*runner.Result, *CoverageResult, error) {
+func RunWithCoverage(a Adapter, hurlPath string, variables map[string]string, handlerFile, handlerName string) (*runner.Result, *CoverageResult, error) {
 	if err := a.Reset(); err != nil {
 		return nil, nil, fmt.Errorf("reset coverage: %w", err)
 	}
@@ -26,7 +26,7 @@ func RunWithCoverage(a Adapter, hurlPath, baseURL, handlerFile, handlerName stri
 		return nil, nil, fmt.Errorf("wait ready: %w", err)
 	}
 
-	result, err := runner.Run(hurlPath, baseURL)
+	result, err := runner.Run(hurlPath, variables)
 
 	// Always stop the server to trigger coverage dump
 	stopErr := a.Stop()

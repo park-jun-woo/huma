@@ -30,7 +30,7 @@ func (m *lifecycleMock) Collect(string, int, int) (*CoverageResult, error) {
 
 func TestRunWithCoverage_ResetError(t *testing.T) {
 	m := &lifecycleMock{resetErr: errors.New("reset failed")}
-	_, _, err := RunWithCoverage(m, "test.hurl", "http://localhost:8080", "handler.go", "Handler")
+	_, _, err := RunWithCoverage(m, "test.hurl", map[string]string{"base_url": "http://localhost:8080"}, "handler.go", "Handler")
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -41,7 +41,7 @@ func TestRunWithCoverage_ResetError(t *testing.T) {
 
 func TestRunWithCoverage_StartError(t *testing.T) {
 	m := &lifecycleMock{startErr: errors.New("start failed")}
-	_, _, err := RunWithCoverage(m, "test.hurl", "http://localhost:8080", "handler.go", "Handler")
+	_, _, err := RunWithCoverage(m, "test.hurl", map[string]string{"base_url": "http://localhost:8080"}, "handler.go", "Handler")
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -52,7 +52,7 @@ func TestRunWithCoverage_StartError(t *testing.T) {
 
 func TestRunWithCoverage_WaitReadyError(t *testing.T) {
 	m := &lifecycleMock{waitErr: errors.New("not ready")}
-	_, _, err := RunWithCoverage(m, "test.hurl", "http://localhost:8080", "handler.go", "Handler")
+	_, _, err := RunWithCoverage(m, "test.hurl", map[string]string{"base_url": "http://localhost:8080"}, "handler.go", "Handler")
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -64,7 +64,7 @@ func TestRunWithCoverage_WaitReadyError(t *testing.T) {
 func TestRunWithCoverage_HurlFail(t *testing.T) {
 	// Hurl with nonexistent file returns a fail result (not an error)
 	m := &lifecycleMock{}
-	result, covResult, err := RunWithCoverage(m, "/nonexistent/test.hurl", "http://localhost:99999", "handler.go", "Handler")
+	result, covResult, err := RunWithCoverage(m, "/nonexistent/test.hurl", map[string]string{"base_url": "http://localhost:99999"}, "handler.go", "Handler")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -82,7 +82,7 @@ func TestRunWithCoverage_HurlFail(t *testing.T) {
 func TestRunWithCoverage_StopError(t *testing.T) {
 	// Hurl returns a fail result (err=nil), but Stop returns an error
 	m := &lifecycleMock{stopErr: errors.New("stop failed")}
-	_, _, err := RunWithCoverage(m, "/nonexistent/test.hurl", "http://localhost:19999", "handler.go", "Handler")
+	_, _, err := RunWithCoverage(m, "/nonexistent/test.hurl", map[string]string{"base_url": "http://localhost:19999"}, "handler.go", "Handler")
 	if err == nil {
 		t.Fatal("expected stop error")
 	}
@@ -107,7 +107,7 @@ func TestRunWithCoverage_HurlPassReadHandlerError(t *testing.T) {
 
 	m := &lifecycleMock{}
 	// handler file doesn't exist, so ReadHandler will fail => skip coverage
-	result, covResult, err := RunWithCoverage(m, hurlFile, ts.URL, "/nonexistent/handler.go", "Handler")
+	result, covResult, err := RunWithCoverage(m, hurlFile, nil, "/nonexistent/handler.go", "Handler")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -141,7 +141,7 @@ func Handler(c interface{}) {
 	os.WriteFile(handlerFile, []byte(handlerContent), 0o644)
 
 	m := &lifecycleMock{collectErr: errors.New("collect failed")}
-	_, _, err := RunWithCoverage(m, hurlFile, ts.URL, handlerFile, "Handler")
+	_, _, err := RunWithCoverage(m, hurlFile, nil, handlerFile, "Handler")
 	if err == nil {
 		t.Fatal("expected collect error")
 	}
@@ -172,7 +172,7 @@ func Handler(c interface{}) {
 
 	covRes := &CoverageResult{Covered: 3, Total: 4, Percent: 75}
 	m := &lifecycleMock{collectRes: covRes}
-	result, gotCov, err := RunWithCoverage(m, hurlFile, ts.URL, handlerFile, "Handler")
+	result, gotCov, err := RunWithCoverage(m, hurlFile, nil, handlerFile, "Handler")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

@@ -6,6 +6,9 @@ func Default() *Config {
 	return &Config{
 		BaseURL: "http://localhost:8080",
 		HurlDir: "hurl",
+		HurlVariables: map[string]string{
+			"base_url": "http://localhost:8080",
+		},
 		Scan: ScanConfig{
 			Lang: "go",
 		},

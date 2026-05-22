@@ -1,9 +1,11 @@
 //ff:func feature=scan type=command control=sequence
-//ff:what Defines the scan command that indexes all API endpoints from source code
+//ff:what Defines the scan command that reads endpoints from an external JSON file or stdin
 package cmd
 
 import (
 	"fmt"
+	"io"
+	"os"
 
 	"github.com/park-jun-woo/hurlfill/internal/config"
 	"github.com/park-jun-woo/hurlfill/internal/scanner"
@@ -11,24 +13,34 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var fromFlag string
+
 var scanCmd = &cobra.Command{
-	Use:   "scan [dir]",
-	Short: "Scan source code and index all API endpoints",
-	Args:  cobra.MaximumNArgs(1),
+	Use:   "scan",
+	Short: "Read endpoints from JSON file or stdin and create a session",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if fromFlag == "" {
+			return fmt.Errorf("--from is required (file path or - for stdin)")
+		}
+
 		_, err := config.Load()
 		if err != nil {
 			return fmt.Errorf("load config: %w", err)
 		}
 
-		dir := "."
-		if len(args) > 0 {
-			dir = args[0]
+		var data []byte
+		if fromFlag == "-" {
+			data, err = io.ReadAll(os.Stdin)
+		} else {
+			data, err = os.ReadFile(fromFlag)
+		}
+		if err != nil {
+			return fmt.Errorf("read input: %w", err)
 		}
 
-		endpoints, err := scanner.Scan(dir)
+		endpoints, err := scanner.ParseEndpoints(data)
 		if err != nil {
-			return fmt.Errorf("scan failed: %w", err)
+			return fmt.Errorf("parse endpoints: %w", err)
 		}
 
 		sess, err := session.Load()
@@ -49,5 +61,6 @@ var scanCmd = &cobra.Command{
 }
 
 func init() {
+	scanCmd.Flags().StringVar(&fromFlag, "from", "", "path to endpoints JSON file, or - for stdin")
 	rootCmd.AddCommand(scanCmd)
 }

@@ -1,14 +1,28 @@
-//ff:func feature=runner type=engine control=sequence
-//ff:what Executes a hurl test file against the base URL and returns pass/fail result
+//ff:func feature=runner type=engine control=iteration dimension=1
+//ff:what Executes a hurl test file with the given variables and returns pass/fail result
 package runner
 
 import (
 	"fmt"
 	"os/exec"
+	"sort"
 )
 
-func Run(hurlPath string, baseURL string) (*Result, error) {
-	cmd := exec.Command("hurl", "--test", "--variable", "base_url="+baseURL, hurlPath)
+func Run(hurlPath string, variables map[string]string) (*Result, error) {
+	args := []string{"--test"}
+
+	keys := make([]string, 0, len(variables))
+	for k := range variables {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		args = append(args, "--variable", k+"="+variables[k])
+	}
+	args = append(args, hurlPath)
+
+	cmd := exec.Command("hurl", args...)
 	out, err := cmd.CombinedOutput()
 	output := string(out)
 

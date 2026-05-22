@@ -1,4 +1,4 @@
-# Phase 003: Coverage Gradient Signal
+# Phase 003: Coverage Gradient Signal ✅ DONE
 
 ## 목표
 

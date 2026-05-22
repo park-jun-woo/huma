@@ -1,133 +1,111 @@
 package scanner
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 )
 
-func TestScan_FindsEndpoints(t *testing.T) {
-	tmpDir := t.TempDir()
-	goFile := filepath.Join(tmpDir, "routes.go")
-	content := `package main
+func TestParseEndpoints_Basic(t *testing.T) {
+	data := []byte(`[
+		{"method": "GET", "path": "/users", "handler": "ListUsers", "file": "handler.go", "line": 10},
+		{"method": "POST", "path": "/users", "handler": "CreateUser", "file": "handler.go", "line": 20}
+	]`)
 
-func setupRoutes(r *gin.Engine) {
-	r.GET("/users", listUsers)
-	r.POST("/users", createUser)
-	r.GET("/users/:id", getUser)
-	r.PUT("/users/:id", updateUser)
-	r.DELETE("/users/:id", deleteUser)
-}
-`
-	os.WriteFile(goFile, []byte(content), 0o644)
-
-	endpoints, err := Scan(tmpDir)
+	endpoints, err := ParseEndpoints(data)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(endpoints) != 5 {
-		t.Fatalf("expected 5 endpoints, got %d", len(endpoints))
+	if len(endpoints) != 2 {
+		t.Fatalf("expected 2 endpoints, got %d", len(endpoints))
+	}
+	if endpoints[0].Method != "GET" || endpoints[0].Path != "/users" {
+		t.Fatalf("unexpected first endpoint: %+v", endpoints[0])
+	}
+	if endpoints[0].Handler != "ListUsers" {
+		t.Fatalf("expected ListUsers, got %s", endpoints[0].Handler)
+	}
+	if endpoints[0].Source != "handler.go" {
+		t.Fatalf("expected handler.go, got %s", endpoints[0].Source)
+	}
+	if endpoints[0].Line != 10 {
+		t.Fatalf("expected line 10, got %d", endpoints[0].Line)
+	}
+	if endpoints[0].ID == "" {
+		t.Fatal("expected non-empty ID")
 	}
 }
 
-func TestScan_SkipsTestFiles(t *testing.T) {
-	tmpDir := t.TempDir()
-	testFile := filepath.Join(tmpDir, "routes_test.go")
-	content := `package main
+func TestParseEndpoints_JuicerFormat(t *testing.T) {
+	data := []byte(`[
+		{"method": "GET", "path": "/api/v1/buildings", "handler": "internal/api/building/handler.go:ListBuildings", "file": "internal/api/building/handler.go", "line": 15}
+	]`)
 
-func TestRoutes(t *testing.T) {
-	r.GET("/test", testHandler)
-}
-`
-	os.WriteFile(testFile, []byte(content), 0o644)
-
-	endpoints, err := Scan(tmpDir)
+	endpoints, err := ParseEndpoints(data)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(endpoints) != 0 {
-		t.Fatalf("expected 0 endpoints from test file, got %d", len(endpoints))
+	if len(endpoints) != 1 {
+		t.Fatalf("expected 1 endpoint, got %d", len(endpoints))
+	}
+	if endpoints[0].Handler != "ListBuildings" {
+		t.Fatalf("expected ListBuildings, got %s", endpoints[0].Handler)
+	}
+	if endpoints[0].Source != "internal/api/building/handler.go" {
+		t.Fatalf("expected file from handler split, got %s", endpoints[0].Source)
 	}
 }
 
-func TestScan_SkipsVendor(t *testing.T) {
-	tmpDir := t.TempDir()
-	vendorDir := filepath.Join(tmpDir, "vendor", "lib")
-	os.MkdirAll(vendorDir, 0o755)
-	os.WriteFile(filepath.Join(vendorDir, "routes.go"), []byte(`package lib
-func setup(r *gin.Engine) {
-	r.GET("/vendor", handler)
-}
-`), 0o644)
+func TestParseEndpoints_JuicerFormatNoFile(t *testing.T) {
+	data := []byte(`[
+		{"method": "POST", "path": "/login", "handler": "auth/handler.go:Login"}
+	]`)
 
-	endpoints, err := Scan(tmpDir)
+	endpoints, err := ParseEndpoints(data)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(endpoints) != 0 {
-		t.Fatalf("expected 0 endpoints from vendor, got %d", len(endpoints))
+	if len(endpoints) != 1 {
+		t.Fatalf("expected 1 endpoint, got %d", len(endpoints))
+	}
+	if endpoints[0].Handler != "Login" {
+		t.Fatalf("expected Login, got %s", endpoints[0].Handler)
+	}
+	if endpoints[0].Source != "auth/handler.go" {
+		t.Fatalf("expected auth/handler.go, got %s", endpoints[0].Source)
 	}
 }
 
-func TestScan_SkipsNonGoFiles(t *testing.T) {
-	tmpDir := t.TempDir()
-	os.WriteFile(filepath.Join(tmpDir, "routes.py"), []byte(`r.GET("/test", handler)`), 0o644)
+func TestParseEndpoints_SkipMissingMethodOrPath(t *testing.T) {
+	data := []byte(`[
+		{"method": "GET", "path": ""},
+		{"method": "", "path": "/test"},
+		{"method": "GET", "path": "/valid"}
+	]`)
 
-	endpoints, err := Scan(tmpDir)
+	endpoints, err := ParseEndpoints(data)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(endpoints) != 0 {
-		t.Fatalf("expected 0 endpoints from non-go file, got %d", len(endpoints))
+	if len(endpoints) != 1 {
+		t.Fatalf("expected 1 endpoint, got %d", len(endpoints))
+	}
+	if endpoints[0].Path != "/valid" {
+		t.Fatalf("expected /valid, got %s", endpoints[0].Path)
 	}
 }
 
-func TestScan_WalkError(t *testing.T) {
-	tmpDir := t.TempDir()
-	// Create a subdirectory that is not readable
-	subDir := filepath.Join(tmpDir, "sub")
-	os.MkdirAll(subDir, 0o755)
-	os.WriteFile(filepath.Join(subDir, "routes.go"), []byte(`package main
-func setup(r *gin.Engine) { r.GET("/test", h) }
-`), 0o644)
-	// Make subdirectory unreadable to cause walk error
-	os.Chmod(subDir, 0o000)
-	t.Cleanup(func() { os.Chmod(subDir, 0o755) })
+func TestParseEndpoints_InvalidJSON(t *testing.T) {
+	data := []byte(`not json`)
 
-	// Should not fail, just skip the unreadable dir
-	endpoints, err := Scan(tmpDir)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(endpoints) != 0 {
-		t.Fatalf("expected 0 endpoints from unreadable dir, got %d", len(endpoints))
+	_, err := ParseEndpoints(data)
+	if err == nil {
+		t.Fatal("expected error for invalid JSON")
 	}
 }
 
-func TestScan_ScanFileError(t *testing.T) {
-	tmpDir := t.TempDir()
-	f := filepath.Join(tmpDir, "routes.go")
-	os.WriteFile(f, []byte(`package main
-func setup(r *gin.Engine) { r.GET("/test", h) }
-`), 0o644)
-	// Make file unreadable after walk discovers it
-	os.Chmod(f, 0o000)
-	t.Cleanup(func() { os.Chmod(f, 0o644) })
+func TestParseEndpoints_EmptyArray(t *testing.T) {
+	data := []byte(`[]`)
 
-	endpoints, err := Scan(tmpDir)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	// scanFile error is silently ignored
-	if len(endpoints) != 0 {
-		t.Fatalf("expected 0, got %d", len(endpoints))
-	}
-}
-
-func TestScan_EmptyDir(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	endpoints, err := Scan(tmpDir)
+	endpoints, err := ParseEndpoints(data)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -136,48 +114,21 @@ func TestScan_EmptyDir(t *testing.T) {
 	}
 }
 
-func TestScanFile_MultipleRoutes(t *testing.T) {
-	tmpDir := t.TempDir()
-	f := filepath.Join(tmpDir, "routes.go")
-	content := `package main
+func TestParseEndpoints_MinimalFields(t *testing.T) {
+	data := []byte(`[{"method": "DELETE", "path": "/items/:id"}]`)
 
-func routes(r *gin.Engine) {
-	r.GET("/health", healthCheck)
-	r.POST("/api/v1/items", createItem)
-	r.PATCH("/api/v1/items/:id", patchItem)
-}
-`
-	os.WriteFile(f, []byte(content), 0o644)
-
-	endpoints, err := scanFile(f)
+	endpoints, err := ParseEndpoints(data)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(endpoints) != 3 {
-		t.Fatalf("expected 3, got %d", len(endpoints))
+	if len(endpoints) != 1 {
+		t.Fatalf("expected 1 endpoint, got %d", len(endpoints))
 	}
-	if endpoints[0].Method != "GET" || endpoints[0].Path != "/health" {
-		t.Fatalf("unexpected first endpoint: %+v", endpoints[0])
+	if endpoints[0].Handler != "" {
+		t.Fatalf("expected empty handler, got %s", endpoints[0].Handler)
 	}
-	if endpoints[2].Method != "PATCH" {
-		t.Fatalf("expected PATCH, got %s", endpoints[2].Method)
-	}
-}
-
-func TestExtractHandler(t *testing.T) {
-	tests := []struct {
-		line string
-		want string
-	}{
-		{`r.GET("/users", listUsers)`, "listUsers"},
-		{`r.POST("/users", createUser)`, "createUser"},
-		{`r.GET("/health")`, ""},
-	}
-	for _, tt := range tests {
-		got := extractHandler(tt.line)
-		if got != tt.want {
-			t.Errorf("extractHandler(%q) = %q, want %q", tt.line, got, tt.want)
-		}
+	if endpoints[0].Source != "" {
+		t.Fatalf("expected empty source, got %s", endpoints[0].Source)
 	}
 }
 
