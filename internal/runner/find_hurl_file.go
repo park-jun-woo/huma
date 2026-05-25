@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/park-jun-woo/hurlfill/internal/scanner"
+	"github.com/park-jun-woo/huma/internal/scanner"
 )
 
 func FindHurlFile(ep *scanner.Endpoint, hurlDir string) string {

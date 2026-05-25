@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/park-jun-woo/hurlfill/internal/adapter"
-	"github.com/park-jun-woo/hurlfill/internal/scanner"
+	"github.com/park-jun-woo/huma/internal/adapter"
+	"github.com/park-jun-woo/huma/internal/scanner"
 )
 
 func TestTodoPrompt_WithHandler(t *testing.T) {

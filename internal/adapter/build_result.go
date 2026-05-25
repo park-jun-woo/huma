@@ -3,7 +3,7 @@
 package adapter
 
 import (
-	"github.com/park-jun-woo/hurlfill/internal/coverage"
+	"github.com/park-jun-woo/huma/internal/coverage"
 )
 
 func buildResult(filtered []coverage.Block, handlerFile string, startLine, endLine int) (*CoverageResult, error) {

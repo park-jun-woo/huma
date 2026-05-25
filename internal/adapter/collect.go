@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/park-jun-woo/hurlfill/internal/coverage"
+	"github.com/park-jun-woo/huma/internal/coverage"
 )
 
 // Collect converts raw coverage data and analyzes coverage for the handler.

@@ -1,5 +1,5 @@
 //ff:func feature=session type=engine control=sequence
-//ff:what Persists session state to .hurlfill/session.json
+//ff:what Persists session state to .huma/session.json
 package session
 
 import (

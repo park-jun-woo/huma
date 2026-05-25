@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/park-jun-woo/hurlfill/internal/config"
+	"github.com/park-jun-woo/huma/internal/config"
 )
 
 func TestNewGoAdapter(t *testing.T) {
@@ -268,7 +268,7 @@ func TestCollect_EmptyCoverage(t *testing.T) {
 	os.Chdir(tmpDir)
 
 	// Create empty coverage data directory
-	covDir := filepath.Join(tmpDir, ".hurlfill", "coverdata")
+	covDir := filepath.Join(tmpDir, ".huma", "coverdata")
 	os.MkdirAll(covDir, 0o755)
 
 	a := &GoAdapter{
@@ -294,9 +294,9 @@ func TestCollect_WithCoverageData(t *testing.T) {
 	os.Chdir(tmpDir)
 
 	// Create coverage data directory
-	covDir := filepath.Join(tmpDir, ".hurlfill", "coverdata")
+	covDir := filepath.Join(tmpDir, ".huma", "coverdata")
 	os.MkdirAll(covDir, 0o755)
-	os.MkdirAll(filepath.Join(tmpDir, ".hurlfill"), 0o755)
+	os.MkdirAll(filepath.Join(tmpDir, ".huma"), 0o755)
 
 	// Create a handler source file
 	handlerFile := filepath.Join(tmpDir, "handler.go")

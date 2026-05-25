@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/park-jun-woo/hurlfill/internal/coverage"
+	"github.com/park-jun-woo/huma/internal/coverage"
 )
 
 // Collect runs `coverage json` to export coverage data, then parses

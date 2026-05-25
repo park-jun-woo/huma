@@ -1,15 +1,18 @@
 # Binary
-hurlfill
+huma
 testdata/server/server
 
 # Local state
-.hurlfill/
+.huma/
 .tsma/
 
 # Local config
 .clari/
 .claude/
 CLAUDE.md
+
+# Plans
+plans/
 
 # Environment
 .env

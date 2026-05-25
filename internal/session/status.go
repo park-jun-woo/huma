@@ -2,7 +2,7 @@
 //ff:what Status represents the lifecycle state of an endpoint (TODO, PASS, IMPROVE, DONE)
 package session
 
-const sessionDir = ".hurlfill"
+const sessionDir = ".huma"
 const sessionFile = "session.json"
 
 type Status string

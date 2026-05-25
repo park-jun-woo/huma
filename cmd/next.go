@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/park-jun-woo/hurlfill/internal/adapter"
-	"github.com/park-jun-woo/hurlfill/internal/config"
-	"github.com/park-jun-woo/hurlfill/internal/prompt"
-	"github.com/park-jun-woo/hurlfill/internal/runner"
-	"github.com/park-jun-woo/hurlfill/internal/scanner"
-	"github.com/park-jun-woo/hurlfill/internal/session"
+	"github.com/park-jun-woo/huma/internal/adapter"
+	"github.com/park-jun-woo/huma/internal/config"
+	"github.com/park-jun-woo/huma/internal/prompt"
+	"github.com/park-jun-woo/huma/internal/runner"
+	"github.com/park-jun-woo/huma/internal/scanner"
+	"github.com/park-jun-woo/huma/internal/session"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +26,7 @@ var nextCmd = &cobra.Command{
 
 		sess, err := session.Load()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "No session found. Run 'hurlfill scan' first.")
+			fmt.Fprintln(os.Stderr, "No session found. Run 'huma scan' first.")
 			os.Exit(1)
 		}
 
@@ -83,10 +83,14 @@ var adapterRunFn = adapter.RunWithCoverage
 
 // newAdapterFn allows tests to replace adapter.NewGoAdapter.
 var newAdapterFn = func(cfg *config.Config) adapter.Adapter {
-	if cfg.Scan.Lang == "python" {
+	switch cfg.Scan.Lang {
+	case "python":
 		return adapter.NewPythonAdapter(cfg)
+	case "node":
+		return adapter.NewNodeAdapter(cfg)
+	default:
+		return adapter.NewGoAdapter(cfg)
 	}
-	return adapter.NewGoAdapter(cfg)
 }
 
 func runWithCoverage(cfg *config.Config, sess *session.Session, ep *scanner.Endpoint, hurl string) error {

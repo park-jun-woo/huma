@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/park-jun-woo/hurlfill/internal/scanner"
+	"github.com/park-jun-woo/huma/internal/scanner"
 )
 
 func TestFindHurlFile_InHurlDir(t *testing.T) {

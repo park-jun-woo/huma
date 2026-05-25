@@ -61,6 +61,19 @@ func TestRunWithCoverage_WaitReadyError(t *testing.T) {
 	}
 }
 
+func TestRunWithCoverage_HurlRunError(t *testing.T) {
+	// Make hurl binary not found by clearing PATH
+	origPath := os.Getenv("PATH")
+	os.Setenv("PATH", "")
+	t.Cleanup(func() { os.Setenv("PATH", origPath) })
+
+	m := &lifecycleMock{}
+	_, _, err := RunWithCoverage(m, "test.hurl", nil, "handler.go", "Handler")
+	if err == nil {
+		t.Fatal("expected hurl run error")
+	}
+}
+
 func TestRunWithCoverage_HurlFail(t *testing.T) {
 	// Hurl with nonexistent file returns a fail result (not an error)
 	m := &lifecycleMock{}

@@ -1,5 +1,5 @@
 //ff:func feature=scan type=parser control=sequence
-//ff:what Converts a raw JSON endpoint entry into an Endpoint struct with ID and juicer handler parsing
+//ff:what Converts a raw JSON endpoint entry into an Endpoint struct with ID and huma handler parsing
 package scanner
 
 import "strings"
@@ -12,7 +12,7 @@ func parseRawEndpoint(r rawEndpoint) *Endpoint {
 	handler := r.Handler
 	file := r.File
 
-	// juicer format: handler contains "file:funcName"
+	// huma format: handler contains "file:funcName"
 	if handler != "" && strings.Contains(handler, ":") {
 		parts := strings.SplitN(handler, ":", 2)
 		if file == "" {

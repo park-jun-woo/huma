@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/park-jun-woo/hurlfill/internal/scanner"
+	"github.com/park-jun-woo/huma/internal/scanner"
 )
 
 func TestNew(t *testing.T) {
@@ -64,7 +64,7 @@ func TestLoad_InvalidJSON(t *testing.T) {
 	t.Cleanup(func() { os.Chdir(orig) })
 	os.Chdir(tmpDir)
 
-	sessDir := filepath.Join(tmpDir, ".hurlfill")
+	sessDir := filepath.Join(tmpDir, ".huma")
 	os.MkdirAll(sessDir, 0o755)
 	os.WriteFile(filepath.Join(sessDir, "session.json"), []byte("invalid json"), 0o644)
 
@@ -80,13 +80,13 @@ func TestSave_Error(t *testing.T) {
 	t.Cleanup(func() { os.Chdir(orig) })
 	os.Chdir(tmpDir)
 
-	// Create a file where .hurlfill should be a directory
-	os.WriteFile(filepath.Join(tmpDir, ".hurlfill"), []byte("blocker"), 0o644)
+	// Create a file where .huma should be a directory
+	os.WriteFile(filepath.Join(tmpDir, ".huma"), []byte("blocker"), 0o644)
 
 	s := New()
 	err := s.Save()
 	if err == nil {
-		t.Fatal("expected error when .hurlfill is a file")
+		t.Fatal("expected error when .huma is a file")
 	}
 }
 

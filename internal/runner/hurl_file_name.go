@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/park-jun-woo/hurlfill/internal/scanner"
+	"github.com/park-jun-woo/huma/internal/scanner"
 )
 
 // HurlFileName returns the expected .hurl file name for an endpoint.

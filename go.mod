@@ -1,4 +1,4 @@
-module github.com/park-jun-woo/hurlfill
+module github.com/park-jun-woo/huma
 
 go 1.22.2
 

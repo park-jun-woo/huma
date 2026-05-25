@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/park-jun-woo/hurlfill/internal/config"
-	"github.com/park-jun-woo/hurlfill/internal/session"
+	"github.com/park-jun-woo/huma/internal/config"
+	"github.com/park-jun-woo/huma/internal/session"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +22,7 @@ var statusCmd = &cobra.Command{
 
 		sess, err := session.Load()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "No session found. Run 'hurlfill scan' first.")
+			fmt.Fprintln(os.Stderr, "No session found. Run 'huma scan' first.")
 			os.Exit(1)
 		}
 

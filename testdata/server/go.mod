@@ -1,4 +1,4 @@
-module github.com/park-jun-woo/hurlfill/testdata/server
+module github.com/park-jun-woo/huma/testdata/server
 
 go 1.23.0
 

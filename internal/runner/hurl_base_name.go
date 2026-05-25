@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/park-jun-woo/hurlfill/internal/scanner"
+	"github.com/park-jun-woo/huma/internal/scanner"
 )
 
 func hurlFileName(ep *scanner.Endpoint) string {

@@ -5,11 +5,11 @@ package adapter
 import (
 	"os/exec"
 
-	"github.com/park-jun-woo/hurlfill/internal/config"
+	"github.com/park-jun-woo/huma/internal/config"
 )
 
 const coverageFile = ".coverage"
-const coverageJSON = ".hurlfill/cov.json"
+const coverageJSON = ".huma/cov.json"
 
 // PythonAdapter implements Adapter using coverage.py for Python servers.
 type PythonAdapter struct {

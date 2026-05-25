@@ -1,5 +1,5 @@
 //ff:type feature=config type=model
-//ff:what Config holds all hurlfill configuration including base URL, hurl directory, and server settings
+//ff:what Config holds all huma configuration including base URL, hurl directory, and server settings
 package config
 
 type Config struct {

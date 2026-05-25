@@ -3,7 +3,7 @@
 package adapter
 
 import (
-	"github.com/park-jun-woo/hurlfill/internal/coverage"
+	"github.com/park-jun-woo/huma/internal/coverage"
 )
 
 func markBlock(b coverage.Block, startLine, endLine int, covered, total map[int]bool) {

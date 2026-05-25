@@ -1,5 +1,5 @@
 //ff:func feature=session type=reader control=sequence
-//ff:what Loads session state from the .hurlfill/session.json file
+//ff:what Loads session state from the .huma/session.json file
 package session
 
 import (

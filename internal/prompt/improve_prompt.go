@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/park-jun-woo/hurlfill/internal/adapter"
-	"github.com/park-jun-woo/hurlfill/internal/scanner"
+	"github.com/park-jun-woo/huma/internal/adapter"
+	"github.com/park-jun-woo/huma/internal/scanner"
 )
 
 // ImprovePrompt builds the agent instruction for an endpoint that passes
@@ -30,7 +30,7 @@ func ImprovePrompt(ep *scanner.Endpoint, hurlFile string, result *adapter.Covera
 	b.WriteString("\n## Instructions\n\n")
 	b.WriteString(fmt.Sprintf("1. Edit %s\n", hurlFile))
 	b.WriteString("2. Add test entries for the uncovered branches above\n")
-	b.WriteString("3. Run `hurlfill next`\n")
+	b.WriteString("3. Run `huma next`\n")
 
 	return b.String()
 }

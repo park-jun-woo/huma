@@ -3,7 +3,7 @@
 package adapter
 
 import (
-	"github.com/park-jun-woo/hurlfill/internal/coverage"
+	"github.com/park-jun-woo/huma/internal/coverage"
 )
 
 func computeLineCoverage(filtered []coverage.Block, startLine, endLine int) (map[int]bool, map[int]bool) {

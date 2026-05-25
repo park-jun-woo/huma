@@ -3,7 +3,7 @@
 package adapter
 
 import (
-	"github.com/park-jun-woo/hurlfill/internal/config"
+	"github.com/park-jun-woo/huma/internal/config"
 )
 
 // NewPythonAdapter creates a new Python coverage adapter.

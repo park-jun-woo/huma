@@ -1,0 +1,30 @@
+//ff:func feature=scan type=parser control=sequence
+//ff:what Tries JSON then YAML formats to unmarshal raw endpoint data
+package scanner
+
+import (
+	"encoding/json"
+	"fmt"
+
+	"gopkg.in/yaml.v3"
+)
+
+func unmarshalEndpoints(data []byte) ([]rawEndpoint, error) {
+	var raw []rawEndpoint
+	if err := json.Unmarshal(data, &raw); err == nil {
+		return raw, nil
+	}
+
+	var wrapped struct {
+		Endpoints []rawEndpoint `yaml:"endpoints" json:"endpoints"`
+	}
+	if err := yaml.Unmarshal(data, &wrapped); err == nil && len(wrapped.Endpoints) > 0 {
+		return wrapped.Endpoints, nil
+	}
+
+	if err := yaml.Unmarshal(data, &raw); err == nil {
+		return raw, nil
+	}
+
+	return nil, fmt.Errorf("input is not valid JSON array, YAML array, or YAML with 'endpoints' key")
+}

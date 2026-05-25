@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/park-jun-woo/hurlfill/internal/runner"
-	"github.com/park-jun-woo/hurlfill/internal/scanner"
-	"github.com/park-jun-woo/hurlfill/internal/source"
+	"github.com/park-jun-woo/huma/internal/runner"
+	"github.com/park-jun-woo/huma/internal/scanner"
+	"github.com/park-jun-woo/huma/internal/source"
 )
 
 // TodoPrompt builds the agent instruction for a TODO endpoint.
@@ -33,7 +33,7 @@ func TodoPrompt(ep *scanner.Endpoint, hurlDir, urlVar string) string {
 	hurlFile := runner.HurlFileName(ep, hurlDir)
 	b.WriteString("\n## Instructions\n\n")
 	b.WriteString(fmt.Sprintf("1. Write %s\n", hurlFile))
-	b.WriteString("2. Run `hurlfill next`\n")
+	b.WriteString("2. Run `huma next`\n")
 
 	return b.String()
 }

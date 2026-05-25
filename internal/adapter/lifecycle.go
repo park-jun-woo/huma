@@ -5,8 +5,8 @@ package adapter
 import (
 	"fmt"
 
-	"github.com/park-jun-woo/hurlfill/internal/runner"
-	"github.com/park-jun-woo/hurlfill/internal/source"
+	"github.com/park-jun-woo/huma/internal/runner"
+	"github.com/park-jun-woo/huma/internal/source"
 )
 
 // RunWithCoverage executes the full adapter lifecycle: reset, start, wait,

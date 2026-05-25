@@ -3,9 +3,9 @@
 package scanner
 
 type rawEndpoint struct {
-	Method  string `json:"method"`
-	Path    string `json:"path"`
-	Handler string `json:"handler"`
-	File    string `json:"file"`
-	Line    int    `json:"line"`
+	Method  string `json:"method" yaml:"method"`
+	Path    string `json:"path" yaml:"path"`
+	Handler string `json:"handler" yaml:"handler"`
+	File    string `json:"file" yaml:"file"`
+	Line    int    `json:"line" yaml:"line"`
 }

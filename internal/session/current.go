@@ -3,7 +3,7 @@
 package session
 
 import (
-	"github.com/park-jun-woo/hurlfill/internal/scanner"
+	"github.com/park-jun-woo/huma/internal/scanner"
 )
 
 func (s *Session) Current() *scanner.Endpoint {

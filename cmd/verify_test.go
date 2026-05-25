@@ -5,9 +5,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/park-jun-woo/hurlfill/internal/adapter"
-	"github.com/park-jun-woo/hurlfill/internal/runner"
-	"github.com/park-jun-woo/hurlfill/internal/session"
+	"github.com/park-jun-woo/huma/internal/adapter"
+	"github.com/park-jun-woo/huma/internal/runner"
+	"github.com/park-jun-woo/huma/internal/session"
 )
 
 func TestVerifyWithCoverage_BuildFailure(t *testing.T) {
@@ -205,10 +205,10 @@ func TestVerifyWithCoverage_SaveErrorOnPass(t *testing.T) {
 	ep := makeEndpoint()
 	sess := makeSession(ep)
 
-	// Make .hurlfill directory read-only to cause Save() to fail
-	os.MkdirAll(".hurlfill", 0o755)
-	os.Chmod(".hurlfill", 0o444)
-	t.Cleanup(func() { os.Chmod(".hurlfill", 0o755) })
+	// Make .huma directory read-only to cause Save() to fail
+	os.MkdirAll(".huma", 0o755)
+	os.Chmod(".huma", 0o444)
+	t.Cleanup(func() { os.Chmod(".huma", 0o755) })
 
 	err := verifyWithCoverage(cfg, sess, &ep, "test.hurl")
 	if err == nil {
@@ -230,9 +230,9 @@ func TestVerifyWithCoverage_SaveErrorOnStalled(t *testing.T) {
 	sess.MarkImprove("ep1", 50)
 	sess.MarkImprove("ep1", 50)
 
-	os.MkdirAll(".hurlfill", 0o755)
-	os.Chmod(".hurlfill", 0o444)
-	t.Cleanup(func() { os.Chmod(".hurlfill", 0o755) })
+	os.MkdirAll(".huma", 0o755)
+	os.Chmod(".huma", 0o444)
+	t.Cleanup(func() { os.Chmod(".huma", 0o755) })
 
 	err := verifyWithCoverage(cfg, sess, &ep, "test.hurl")
 	if err == nil {
@@ -252,9 +252,9 @@ func TestVerifyWithCoverage_SaveErrorOnImprove(t *testing.T) {
 	ep := makeEndpoint()
 	sess := makeSession(ep)
 
-	os.MkdirAll(".hurlfill", 0o755)
-	os.Chmod(".hurlfill", 0o444)
-	t.Cleanup(func() { os.Chmod(".hurlfill", 0o755) })
+	os.MkdirAll(".huma", 0o755)
+	os.Chmod(".huma", 0o444)
+	t.Cleanup(func() { os.Chmod(".huma", 0o755) })
 
 	err := verifyWithCoverage(cfg, sess, &ep, "test.hurl")
 	if err == nil {

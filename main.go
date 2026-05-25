@@ -2,7 +2,7 @@
 //ff:what CLI entrypoint that delegates to cobra command execution
 package main
 
-import "github.com/park-jun-woo/hurlfill/cmd"
+import "github.com/park-jun-woo/huma/cmd"
 
 func main() {
 	cmd.Execute()

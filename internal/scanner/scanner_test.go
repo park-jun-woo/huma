@@ -34,7 +34,7 @@ func TestParseEndpoints_Basic(t *testing.T) {
 	}
 }
 
-func TestParseEndpoints_JuicerFormat(t *testing.T) {
+func TestParseEndpoints_HumaFormat(t *testing.T) {
 	data := []byte(`[
 		{"method": "GET", "path": "/api/v1/buildings", "handler": "internal/api/building/handler.go:ListBuildings", "file": "internal/api/building/handler.go", "line": 15}
 	]`)
@@ -54,7 +54,7 @@ func TestParseEndpoints_JuicerFormat(t *testing.T) {
 	}
 }
 
-func TestParseEndpoints_JuicerFormatNoFile(t *testing.T) {
+func TestParseEndpoints_HumaFormatNoFile(t *testing.T) {
 	data := []byte(`[
 		{"method": "POST", "path": "/login", "handler": "auth/handler.go:Login"}
 	]`)

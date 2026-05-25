@@ -7,9 +7,9 @@ import (
 	"io"
 	"os"
 
-	"github.com/park-jun-woo/hurlfill/internal/config"
-	"github.com/park-jun-woo/hurlfill/internal/scanner"
-	"github.com/park-jun-woo/hurlfill/internal/session"
+	"github.com/park-jun-woo/huma/internal/config"
+	"github.com/park-jun-woo/huma/internal/scanner"
+	"github.com/park-jun-woo/huma/internal/session"
 	"github.com/spf13/cobra"
 )
 

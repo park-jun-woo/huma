@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/park-jun-woo/hurlfill/internal/scanner"
+	"github.com/park-jun-woo/huma/internal/scanner"
 )
 
 // FailPrompt builds the agent instruction for a FAIL endpoint.
@@ -21,7 +21,7 @@ func FailPrompt(ep *scanner.Endpoint, hurlFile string, feedback string) string {
 	b.WriteString("\n## Instructions\n\n")
 	b.WriteString(fmt.Sprintf("1. Edit %s\n", hurlFile))
 	b.WriteString("2. Fix the failing assertion\n")
-	b.WriteString("3. Run `hurlfill next`\n")
+	b.WriteString("3. Run `huma next`\n")
 
 	return b.String()
 }

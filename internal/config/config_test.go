@@ -53,7 +53,7 @@ server:
   start: ./app
   ready: http://localhost:3000/health
 `
-	os.WriteFile(filepath.Join(tmpDir, "hurlfill.yaml"), []byte(yamlContent), 0o644)
+	os.WriteFile(filepath.Join(tmpDir, "huma.yaml"), []byte(yamlContent), 0o644)
 
 	cfg, err := Load()
 	if err != nil {
@@ -76,7 +76,7 @@ func TestLoad_PermissionDenied(t *testing.T) {
 	t.Cleanup(func() { os.Chdir(orig) })
 	os.Chdir(tmpDir)
 
-	f := filepath.Join(tmpDir, "hurlfill.yaml")
+	f := filepath.Join(tmpDir, "huma.yaml")
 	os.WriteFile(f, []byte("base_url: test"), 0o644)
 	os.Chmod(f, 0o000)
 	t.Cleanup(func() { os.Chmod(f, 0o644) })
@@ -93,7 +93,7 @@ func TestLoad_InvalidYAML(t *testing.T) {
 	t.Cleanup(func() { os.Chdir(orig) })
 	os.Chdir(tmpDir)
 
-	os.WriteFile(filepath.Join(tmpDir, "hurlfill.yaml"), []byte(":\ninvalid:\n  - [broken"), 0o644)
+	os.WriteFile(filepath.Join(tmpDir, "huma.yaml"), []byte(":\ninvalid:\n  - [broken"), 0o644)
 
 	_, err := Load()
 	if err == nil {

@@ -1,5 +1,5 @@
 //ff:func feature=cli type=command control=sequence
-//ff:what Defines the root cobra command and Execute entrypoint for hurlfill CLI
+//ff:what Defines the root cobra command and Execute entrypoint for huma CLI
 package cmd
 
 import (
@@ -10,7 +10,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "hurlfill",
+	Use:   "huma",
 	Short: "Auto-generate wall-to-wall Hurl tests for legacy SaaS APIs",
 }
 

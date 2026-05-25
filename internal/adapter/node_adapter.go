@@ -5,12 +5,12 @@ package adapter
 import (
 	"os/exec"
 
-	"github.com/park-jun-woo/hurlfill/internal/config"
+	"github.com/park-jun-woo/huma/internal/config"
 )
 
-const nodeCoverDir = ".hurlfill/v8cov"
-const istanbulOutDir = ".hurlfill/istanbul"
-const istanbulOutFile = ".hurlfill/istanbul/coverage-final.json"
+const nodeCoverDir = ".huma/v8cov"
+const istanbulOutDir = ".huma/istanbul"
+const istanbulOutFile = ".huma/istanbul/coverage-final.json"
 
 // NodeAdapter implements Adapter using Node.js V8 built-in coverage.
 type NodeAdapter struct {

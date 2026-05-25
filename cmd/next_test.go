@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/park-jun-woo/hurlfill/internal/adapter"
-	"github.com/park-jun-woo/hurlfill/internal/config"
-	"github.com/park-jun-woo/hurlfill/internal/runner"
-	"github.com/park-jun-woo/hurlfill/internal/scanner"
-	"github.com/park-jun-woo/hurlfill/internal/session"
+	"github.com/park-jun-woo/huma/internal/adapter"
+	"github.com/park-jun-woo/huma/internal/config"
+	"github.com/park-jun-woo/huma/internal/runner"
+	"github.com/park-jun-woo/huma/internal/scanner"
+	"github.com/park-jun-woo/huma/internal/session"
 )
 
 // mockAdapter implements adapter.Adapter for testing.
@@ -340,6 +340,74 @@ func TestRunWithCoverage_StalledThenAllComplete(t *testing.T) {
 	// Should be DONE and all complete
 	if next := sess.Current(); next != nil {
 		t.Fatal("expected all complete")
+	}
+}
+
+// withReadOnlySessionDir creates a file at .huma so session.Save() fails with MkdirAll error.
+func withReadOnlySessionDir(t *testing.T) string {
+	t.Helper()
+	tmpDir := t.TempDir()
+	orig, _ := os.Getwd()
+	t.Cleanup(func() { os.Chdir(orig) })
+	os.Chdir(tmpDir)
+	// Create a regular file at .huma so MkdirAll fails
+	os.WriteFile(filepath.Join(tmpDir, ".huma"), []byte("block"), 0o444)
+	return tmpDir
+}
+
+func TestRunWithCoverage_PassSaveError(t *testing.T) {
+	tmpDir := withReadOnlySessionDir(t)
+	ma := &mockAdapter{}
+	withMockAdapter(t, ma)
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+		return &runner.Result{Pass: true}, nil, nil
+	})
+
+	cfg := makeCfg(tmpDir)
+	ep := makeEndpoint()
+	sess := makeSession(ep)
+
+	err := runWithCoverage(cfg, sess, &ep, "test.hurl")
+	if err == nil {
+		t.Fatal("expected save error, got nil")
+	}
+}
+
+func TestRunWithCoverage_StalledSaveError(t *testing.T) {
+	tmpDir := withReadOnlySessionDir(t)
+	ma := &mockAdapter{}
+	withMockAdapter(t, ma)
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+		return &runner.Result{Pass: true}, &adapter.CoverageResult{Covered: 5, Total: 10, Percent: 50}, nil
+	})
+
+	cfg := makeCfg(tmpDir)
+	ep := makeEndpoint()
+	sess := makeSession(ep)
+	sess.MarkImprove("ep1", 50)
+	sess.MarkImprove("ep1", 50)
+
+	err := runWithCoverage(cfg, sess, &ep, "test.hurl")
+	if err == nil {
+		t.Fatal("expected save error, got nil")
+	}
+}
+
+func TestRunWithCoverage_ImproveSaveError(t *testing.T) {
+	tmpDir := withReadOnlySessionDir(t)
+	ma := &mockAdapter{}
+	withMockAdapter(t, ma)
+	withMockRunFn(t, func(a adapter.Adapter, hurl string, vars map[string]string, src, handler string) (*runner.Result, *adapter.CoverageResult, error) {
+		return &runner.Result{Pass: true}, &adapter.CoverageResult{Covered: 7, Total: 10, Percent: 70}, nil
+	})
+
+	cfg := makeCfg(tmpDir)
+	ep := makeEndpoint()
+	sess := makeSession(ep)
+
+	err := runWithCoverage(cfg, sess, &ep, "test.hurl")
+	if err == nil {
+		t.Fatal("expected save error, got nil")
 	}
 }
 

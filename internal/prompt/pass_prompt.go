@@ -5,7 +5,7 @@ package prompt
 import (
 	"fmt"
 
-	"github.com/park-jun-woo/hurlfill/internal/scanner"
+	"github.com/park-jun-woo/huma/internal/scanner"
 )
 
 // PassPrompt builds the agent instruction for a PASS then next TODO.

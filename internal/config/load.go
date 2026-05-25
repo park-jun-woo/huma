@@ -1,5 +1,5 @@
 //ff:func feature=config type=reader control=sequence
-//ff:what Loads configuration from hurlfill.yaml, falling back to defaults if missing
+//ff:what Loads configuration from huma.yaml, falling back to defaults if missing
 package config
 
 import (
@@ -10,7 +10,7 @@ import (
 )
 
 func Load() (*Config, error) {
-	data, err := os.ReadFile("hurlfill.yaml")
+	data, err := os.ReadFile("huma.yaml")
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return Default(), nil
