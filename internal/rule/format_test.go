@@ -47,8 +47,8 @@ func TestManifestRules_Count(t *testing.T) {
 
 func TestEndpointRules_Count(t *testing.T) {
 	rules := EndpointRules()
-	if len(rules) != 8 {
-		t.Errorf("got %d endpoint rules, want 8", len(rules))
+	if len(rules) != 9 {
+		t.Errorf("got %d endpoint rules, want 9", len(rules))
 	}
 }
 

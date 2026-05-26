@@ -1,5 +1,5 @@
 //ff:func feature=rule type=helper control=sequence
-//ff:what Returns all endpoint validation rules (E-01 to E-08)
+//ff:what Returns all endpoint validation rules (E-01 to E-09)
 package rule
 
 var (
@@ -11,9 +11,10 @@ var (
 	E06 = Rule{ID: "E-06", Level: "WARNING", Description: "Endpoint missing handler field"}
 	E07 = Rule{ID: "E-07", Level: "WARNING", Description: "Endpoint missing file field"}
 	E08 = Rule{ID: "E-08", Level: "WARNING", Description: "Duplicate endpoint"}
+	E09 = Rule{ID: "E-09", Level: "WARNING", Description: "OpenAPI auto-detect failed, falling back to endpoint list parser"}
 )
 
 // EndpointRules returns all endpoint validation rules.
 func EndpointRules() []Rule {
-	return []Rule{E01, E02, E03, E04, E05, E06, E07, E08}
+	return []Rule{E01, E02, E03, E04, E05, E06, E07, E08, E09}
 }
