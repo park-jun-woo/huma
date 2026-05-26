@@ -1,6 +1,9 @@
 package scanner
 
-import "testing"
+import (
+	"encoding/json"
+	"testing"
+)
 
 func TestParseOpenAPI(t *testing.T) {
 	data := []byte(`
@@ -13,6 +16,11 @@ paths:
       operationId: Login
       x-source-file: internal/api/auth/handler.go
       x-source-line: 50
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
   /api/v1/buildings/{buildingId}:
     get:
       operationId: GetBuilding
@@ -53,6 +61,22 @@ paths:
 	if login.Line != 50 {
 		t.Fatalf("expected line 50, got %d", login.Line)
 	}
+	if len(login.Responses) == 0 {
+		t.Fatal("expected non-empty Responses for Login")
+	}
+	type respEntry struct {
+		Status int `json:"status"`
+	}
+	var respEntries []respEntry
+	if err := json.Unmarshal(login.Responses, &respEntries); err != nil {
+		t.Fatalf("unmarshal responses: %v", err)
+	}
+	if len(respEntries) != 2 {
+		t.Fatalf("expected 2 response entries, got %d", len(respEntries))
+	}
+	if respEntries[0].Status != 200 || respEntries[1].Status != 400 {
+		t.Fatalf("unexpected response statuses: %+v", respEntries)
+	}
 
 	// Check path param conversion
 	getBuilding, ok := byKey["GET /api/v1/buildings/:buildingId"]
@@ -61,6 +85,11 @@ paths:
 	}
 	if getBuilding.Handler != "GetBuilding" {
 		t.Fatalf("expected GetBuilding, got %s", getBuilding.Handler)
+	}
+
+	// Check endpoint without responses has nil Responses
+	if getBuilding.Responses != nil {
+		t.Fatalf("expected nil Responses for GetBuilding, got %s", string(getBuilding.Responses))
 	}
 
 	// Check auto-generated operationId (missing operationId)

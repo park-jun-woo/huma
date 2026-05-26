@@ -35,6 +35,7 @@ func parseOpenAPI(data []byte) ([]Endpoint, error) {
 
 	var endpoints []Endpoint
 	for path, methodsRaw := range paths {
+		path = strings.TrimRight(path, "/")
 		methods, ok := methodsRaw.(map[string]interface{})
 		if !ok {
 			continue
@@ -59,14 +60,18 @@ func parseOpenAPI(data []byte) ([]Endpoint, error) {
 			line := intField(op, "x-source-line")
 
 			humaPath := convertPathParams(path)
-			endpoints = append(endpoints, Endpoint{
+			ep := Endpoint{
 				ID:      makeID(strings.ToUpper(methodLower), humaPath),
 				Method:  strings.ToUpper(methodLower),
 				Path:    humaPath,
 				Handler: handler,
 				Source:  source,
 				Line:    line,
-			})
+			}
+			if resp := extractOpenAPIResponses(op); resp != nil {
+				ep.Responses = resp
+			}
+			endpoints = append(endpoints, ep)
 		}
 	}
 
