@@ -7,7 +7,7 @@ All validation rules emitted by huma. Each rule has a unique ID, level, and desc
 | Prefix | Domain |
 |--------|--------|
 | `M-` | manifest.yaml validation |
-| `E-` | endpoints.yaml validation |
+| `E-` | endpoint input validation |
 | `H-` | hurl file validation |
 | `S-` | session state validation |
 | `A-` | adapter/server validation |
@@ -38,7 +38,7 @@ All validation rules emitted by huma. Each rule has a unique ID, level, and desc
 
 | Rule ID | Level | Description |
 |---------|-------|-------------|
-| E-01 | ERROR | `--from` flag required |
+| E-01 | ERROR | No OpenAPI file found and `--from` not specified |
 | E-02 | ERROR | Input file not readable |
 | E-03 | ERROR | Input is not valid JSON/YAML |
 | E-04 | ERROR | Endpoint missing `method` field |
@@ -46,6 +46,7 @@ All validation rules emitted by huma. Each rule has a unique ID, level, and desc
 | E-06 | WARNING | Endpoint missing `handler` field |
 | E-07 | WARNING | Endpoint missing `file` field |
 | E-08 | WARNING | Duplicate endpoint |
+| E-09 | WARNING | OpenAPI auto-detect failed, falling back to endpoint list parser |
 
 ## H. Hurl
 

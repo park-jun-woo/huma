@@ -36,12 +36,21 @@ func (a *PythonAdapter) Collect(handlerFile string, startLine, endLine int) (*Co
 		pct = float64(coveredCount) / float64(totalCount) * 100
 	}
 
-	uncovered := make([]UncoveredLine, len(missingLines))
-	for i, line := range missingLines {
-		uncovered[i] = UncoveredLine{
-			File: handlerFile,
-			Line: line,
-		}
+	covered := make(map[int]bool, len(executedLines))
+	for _, ln := range executedLines {
+		covered[ln] = true
+	}
+	total := make(map[int]bool, totalCount)
+	for _, ln := range executedLines {
+		total[ln] = true
+	}
+	for _, ln := range missingLines {
+		total[ln] = true
+	}
+
+	uncovered, err := readUncoveredLines(handlerFile, covered, total)
+	if err != nil {
+		uncovered = nil
 	}
 
 	return &CoverageResult{

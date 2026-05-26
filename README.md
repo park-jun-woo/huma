@@ -45,18 +45,29 @@ Each endpoint progresses through these states:
 
 ## Coverage mode
 
-When `huma.yaml` includes a `server` block, huma builds, starts, and instruments the server to measure per-handler line coverage:
+When `manifest.yaml` includes a `testing.server` block, huma builds, starts, and instruments the server to measure per-handler line coverage:
 
 ```yaml
-server:
-  build: "go build -cover -o ./server.test ./cmd/server"
-  start: "./server.test"
-  ready: "http://localhost:8080/api/health"
-  env:
-    GIN_MODE: test
+apiVersion: yongol/v1
+kind: Project
+metadata:
+  name: my-project
+backend:
+  lang: go
+  framework: gin
+  module: github.com/org/project
+testing:
+  base_url: "http://localhost:8080"
+  hurl_dir: "hurl"
+  hurl_variables:
+    host: "http://localhost:8080"
+  server:
+    build: "go build -o ./server.test ./cmd/server"
+    start: "./server.test"
+    ready: "/api/health"
 ```
 
-Without the `server` block, huma runs in no-coverage mode (pass/fail only).
+Without the `testing.server` block, huma runs in static mode (no server, static analysis only).
 
 ## Supported languages
 

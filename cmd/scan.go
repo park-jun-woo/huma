@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/park-jun-woo/huma/internal/config"
+	"github.com/park-jun-woo/huma/internal/rule"
 	"github.com/park-jun-woo/huma/internal/scanner"
 	"github.com/park-jun-woo/huma/internal/session"
 	"github.com/spf13/cobra"
@@ -23,7 +24,7 @@ var scanCmd = &cobra.Command{
 		if fromFlag == "" {
 			found := scanner.FindOpenAPIFile()
 			if found == "" {
-				return fmt.Errorf("[E-02] No OpenAPI file found. Use --from to specify.")
+				return fmt.Errorf("%s", rule.E01.Format("Use --from to specify."))
 			}
 			fromFlag = found
 		}

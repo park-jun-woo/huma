@@ -82,6 +82,7 @@ var verifyCmd = &cobra.Command{
 			return err
 		}
 		fmt.Print(prompt.PassPrompt(ep))
+		fmt.Println()
 
 		return nil
 	},
@@ -112,6 +113,7 @@ func verifyWithCoverage(cfg *config.Config, sess *session.Session, ep *scanner.E
 			return err
 		}
 		fmt.Print(prompt.PassPrompt(ep))
+		fmt.Println()
 		return nil
 	}
 
@@ -122,6 +124,7 @@ func verifyWithCoverage(cfg *config.Config, sess *session.Session, ep *scanner.E
 			return err
 		}
 		fmt.Print(prompt.PassPrompt(ep))
+		fmt.Println()
 		return nil
 	}
 

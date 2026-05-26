@@ -41,7 +41,7 @@ go install github.com/park-jun-woo/huma@latest
 
 ```
 1. Create endpoints.yaml    — list every endpoint (method, path, handler, file, line)
-2. Create huma.yaml         — base_url, hurl_dir, variables
+2. Create manifest.yaml      — testing block with base_url, hurl_dir, variables
 3. huma scan --from endpoints.yaml
 4. Loop:
    a. huma next             — read the TODO prompt
@@ -69,27 +69,29 @@ endpoints:
 Fields: `method`, `path`, `handler`, `file` (source location), `line`.
 Accepts JSON array, YAML array, or YAML with `endpoints` key.
 
-### Step 2: huma.yaml
+### Step 2: manifest.yaml
 
 ```yaml
-base_url: "http://localhost:8080"
-hurl_dir: "hurl"
-hurl_variables:
-  host: "http://localhost:8080"
-scan:
-  lang: "go"        # go | python | node
+apiVersion: yongol/v1
+kind: Project
+metadata:
+  name: my-project
+backend:
+  lang: go
+  framework: gin
+  module: github.com/org/project
+testing:
+  base_url: "http://localhost:8080"
+  hurl_dir: "hurl"
+  hurl_variables:
+    host: "http://localhost:8080"
+  server:
+    build: "go build -o ./server.test ./cmd/server"
+    start: "./server.test"
+    ready: "/api/health"
 ```
 
-Optional coverage mode (builds and instruments the server):
-
-```yaml
-server:
-  build: "go build -cover -o ./server.test ./cmd/server"
-  start: "./server.test"
-  ready: "http://localhost:8080/api/health"
-  env:
-    GIN_MODE: test
-```
+Without the `testing.server` block, huma runs in static mode (no server, static analysis only).
 
 ### Step 3: Scan
 
@@ -123,7 +125,7 @@ Write the .hurl file, then run `huma next` again. On pass it advances to the nex
 | State | Meaning |
 |-------|---------|
 | **TODO** | No .hurl file yet |
-| **PASS** | Hurl test passes (coverage 100% or no server config) |
+| **PASS** | Hurl test passes (coverage 100% or no testing.server block) |
 | **IMPROVE** | Hurl passes but coverage < 100%; uncovered lines shown |
 | **DONE** | Coverage stalled after retry; accepted at current level |
 
@@ -135,14 +137,14 @@ Example: `GET /api/v1/admin/buildings` → `hurl/get_api_v1_admin_buildings.hurl
 
 ### Coverage Mode
 
-With `server` config, huma:
+With `testing.server` config, huma:
 1. Builds instrumented binary
 2. Starts server, waits for ready endpoint
 3. Runs hurl test
 4. Collects per-handler line coverage
 5. Reports uncovered lines in IMPROVE prompt
 
-Without `server` config: pass/fail only (no coverage tracking).
+Without the `testing.server` block: static mode (no server, static analysis only).
 
 ## Common Errors and Fixes
 
@@ -152,10 +154,10 @@ All errors carry a rule ID. See `rulebook.md` for the full catalog.
 |---------|-------|-------|-----|
 | S-01 | `[S-01] No session found` | Haven't scanned yet | Run `huma scan --from endpoints.yaml` |
 | H-01 | `[H-01] Hurl file not found at expected path` | .hurl not at expected path | Check `huma next` output for expected filename |
-| M-02 | `[M-02] manifest.yaml parse error` | Bad huma.yaml | Validate YAML syntax |
+| M-02 | `[M-02] manifest.yaml parse error` | Bad manifest.yaml | Validate YAML syntax |
 | E-01 | `[E-01] --from flag required` | Missing --from flag | Run `huma scan --from <file>` |
 | H-02 | `[H-02] Hurl execution failed` | hurl binary not installed or server not running | Install hurl: `cargo install hurl` or `brew install hurl` |
-| A-02 | `[A-02] Server build command failed` | Build command errored | Check build command in huma.yaml server.build |
+| A-02 | `[A-02] Server build command failed` | Build command errored | Check build command in manifest.yaml testing.server.build |
 
 ## Conventions
 

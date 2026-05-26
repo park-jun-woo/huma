@@ -3,7 +3,7 @@
 package rule
 
 var (
-	E01 = Rule{ID: "E-01", Level: "ERROR", Description: "--from flag required"}
+	E01 = Rule{ID: "E-01", Level: "ERROR", Description: "No OpenAPI file found and --from not specified"}
 	E02 = Rule{ID: "E-02", Level: "ERROR", Description: "Input file not readable"}
 	E03 = Rule{ID: "E-03", Level: "ERROR", Description: "Input is not valid JSON/YAML"}
 	E04 = Rule{ID: "E-04", Level: "ERROR", Description: "Endpoint missing method field"}
