@@ -63,10 +63,27 @@ var scanCmd = &cobra.Command{
 			return fmt.Errorf("save session: %w", err)
 		}
 
-		fmt.Printf("Scanned %d endpoints\n", len(endpoints))
-		for _, ep := range endpoints {
-			fmt.Printf("  %s %s  (%s)\n", ep.Method, ep.Path, ep.Source)
+		precheckEndpoints(sess, cfg)
+		if err := sess.Save(); err != nil {
+			return fmt.Errorf("save session: %w", err)
 		}
+
+		var passCount, improveCount, todoCount int
+		for _, e := range sess.Entries {
+			switch e.Status {
+			case session.StatusPass, session.StatusDone:
+				passCount++
+			case session.StatusImprove:
+				improveCount++
+			default:
+				todoCount++
+			}
+		}
+
+		fmt.Printf("Scanned %d endpoints\n", len(endpoints))
+		fmt.Printf("  PASS:    %d (existing hurl, all responses covered)\n", passCount)
+		fmt.Printf("  IMPROVE: %d (existing hurl, missing responses)\n", improveCount)
+		fmt.Printf("  TODO:    %d (no hurl file)\n", todoCount)
 
 		warnMismatchedHurlFiles(hurlDir, endpoints)
 
