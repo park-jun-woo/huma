@@ -22,11 +22,12 @@ func parseRawEndpoint(r rawEndpoint) *Endpoint {
 	}
 
 	return &Endpoint{
-		ID:      makeID(r.Method, r.Path),
-		Method:  r.Method,
-		Path:    r.Path,
-		Handler: handler,
-		Source:  file,
-		Line:    r.Line,
+		ID:        makeID(r.Method, r.Path),
+		Method:    r.Method,
+		Path:      r.Path,
+		Handler:   handler,
+		Source:    file,
+		Line:      r.Line,
+		Responses: r.Responses,
 	}
 }

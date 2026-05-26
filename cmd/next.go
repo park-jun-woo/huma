@@ -3,12 +3,14 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/park-jun-woo/huma/internal/adapter"
 	"github.com/park-jun-woo/huma/internal/config"
 	"github.com/park-jun-woo/huma/internal/prompt"
+	"github.com/park-jun-woo/huma/internal/rule"
 	"github.com/park-jun-woo/huma/internal/runner"
 	"github.com/park-jun-woo/huma/internal/scanner"
 	"github.com/park-jun-woo/huma/internal/session"
@@ -20,14 +22,29 @@ var nextCmd = &cobra.Command{
 	Short: "Show the next untested endpoint, or verify the current one",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.Load()
+		if errors.Is(err, config.ErrNoManifest) {
+			fmt.Print(prompt.SetupPrompt())
+			return nil
+		}
 		if err != nil {
 			return fmt.Errorf("load config: %w", err)
 		}
 
+		if cfg.Server.Start == "" {
+			fmt.Print(prompt.ConfigPrompt())
+			return nil
+		}
+
 		sess, err := session.Load()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "No session found. Run 'huma scan' first.")
+			fmt.Fprintln(os.Stderr, rule.S01.Format("Run 'huma scan' first."))
 			os.Exit(1)
+		}
+
+		readyURL := cfg.BaseURL + cfg.Server.Ready
+		if !probeCheckFn(readyURL) {
+			fmt.Print(prompt.StartPrompt(cfg))
+			return nil
 		}
 
 		ep := sess.Current()
@@ -49,34 +66,49 @@ var nextCmd = &cobra.Command{
 			return runWithCoverage(cfg, sess, ep, hurl)
 		}
 
-		// No coverage mode — behave as before (hurl pass/fail only)
+		// No coverage mode — run hurl and check static response coverage
 		result, err := runner.Run(hurl, cfg.HurlVariables)
 		if err != nil {
-			return fmt.Errorf("hurl run failed: %w", err)
+			return fmt.Errorf(rule.H02.Format(err.Error()))
 		}
 
-		if result.Pass {
-			sess.MarkPass(ep.ID)
+		if !result.Pass {
+			fmt.Print(prompt.FailPrompt(ep, hurl, result.Feedback))
+			return nil
+		}
+
+		// Hurl passed — check static response coverage
+		respResult := checkResponseCoverageFn(ep, hurl)
+		if respResult != nil && respResult.Total > 0 && len(respResult.Missing) > 0 {
+			sess.MarkImprove(ep.ID, respResult.Percent)
 			if err := sess.Save(); err != nil {
 				return err
 			}
-			fmt.Print(prompt.PassPrompt(ep))
-			fmt.Println()
+			fmt.Print(prompt.ResponseImprovePrompt(ep, hurl, respResult))
+			return nil
+		}
 
-			next := sess.Current()
-			if next == nil {
-				total, pass, _ := sess.Stats()
-				fmt.Print(prompt.AllComplete(pass, total))
-			} else {
-				fmt.Print(prompt.TodoPrompt(next, cfg.HurlDir, cfg.URLVar()))
-			}
+		sess.MarkPass(ep.ID)
+		if err := sess.Save(); err != nil {
+			return err
+		}
+		fmt.Print(prompt.PassPrompt(ep))
+		fmt.Println()
+
+		next := sess.Current()
+		if next == nil {
+			total, pass, _ := sess.Stats()
+			fmt.Print(prompt.AllComplete(pass, total))
 		} else {
-			fmt.Print(prompt.FailPrompt(ep, hurl, result.Feedback))
+			fmt.Print(prompt.TodoPrompt(next, cfg.HurlDir, cfg.URLVar()))
 		}
 
 		return nil
 	},
 }
+
+// probeCheckFn allows tests to replace adapter.ProbeCheck.
+var probeCheckFn = adapter.ProbeCheck
 
 // adapterRunFn allows tests to replace adapter.RunWithCoverage.
 var adapterRunFn = adapter.RunWithCoverage
@@ -98,7 +130,7 @@ func runWithCoverage(cfg *config.Config, sess *session.Session, ep *scanner.Endp
 	a := newAdapterFn(cfg)
 
 	if err := a.Build(); err != nil {
-		return fmt.Errorf("build: %w", err)
+		return fmt.Errorf(rule.A02.Format(err.Error()))
 	}
 
 	result, covResult, err := adapterRunFn(a, hurl, cfg.HurlVariables, ep.Source, ep.Handler)

@@ -1,8 +1,9 @@
 //ff:func feature=scan type=command control=sequence
-//ff:what Defines the scan command that reads endpoints from an external JSON file or stdin
+//ff:what Defines the scan command that reads endpoints from OpenAPI, JSON, or YAML input
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -17,15 +18,24 @@ var fromFlag string
 
 var scanCmd = &cobra.Command{
 	Use:   "scan",
-	Short: "Read endpoints from JSON file or stdin and create a session",
+	Short: "Read endpoints from OpenAPI, JSON, or stdin and create a session",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if fromFlag == "" {
-			return fmt.Errorf("--from is required (file path or - for stdin)")
+			found := scanner.FindOpenAPIFile()
+			if found == "" {
+				return fmt.Errorf("[E-02] No OpenAPI file found. Use --from to specify.")
+			}
+			fromFlag = found
 		}
 
-		_, err := config.Load()
-		if err != nil {
+		cfg, err := config.Load()
+		if err != nil && !errors.Is(err, config.ErrNoManifest) {
 			return fmt.Errorf("load config: %w", err)
+		}
+
+		hurlDir := "hurl"
+		if cfg != nil {
+			hurlDir = cfg.HurlDir
 		}
 
 		var data []byte
@@ -56,6 +66,9 @@ var scanCmd = &cobra.Command{
 		for _, ep := range endpoints {
 			fmt.Printf("  %s %s  (%s)\n", ep.Method, ep.Path, ep.Source)
 		}
+
+		warnMismatchedHurlFiles(hurlDir, endpoints)
+
 		return nil
 	},
 }

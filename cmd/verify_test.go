@@ -23,7 +23,8 @@ func TestVerifyWithCoverage_BuildFailure(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
-	if err.Error() != "build: build failed" {
+	want := "[A-02] Server build command failed\n  ▶ build failed"
+	if err.Error() != want {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

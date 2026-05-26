@@ -8,4 +8,5 @@ type Config struct {
 	HurlVariables map[string]string `yaml:"hurl_variables"`
 	Scan          ScanConfig        `yaml:"scan"`
 	Server        ServerConfig      `yaml:"server"`
+	Deps          DepsConfig        `yaml:"deps"`
 }

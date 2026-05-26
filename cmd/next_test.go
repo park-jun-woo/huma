@@ -74,6 +74,14 @@ func withMockRunFn(t *testing.T, fn func(adapter.Adapter, string, map[string]str
 	adapterRunFn = fn
 }
 
+// withProbeCheck replaces probeCheckFn for tests and restores it after.
+func withProbeCheck(t *testing.T, result bool) {
+	t.Helper()
+	orig := probeCheckFn
+	t.Cleanup(func() { probeCheckFn = orig })
+	probeCheckFn = func(url string) bool { return result }
+}
+
 func TestRunWithCoverage_BuildFailure(t *testing.T) {
 	tmpDir := withSessionDir(t)
 	ma := &mockAdapter{buildErr: errors.New("build failed")}
@@ -87,7 +95,8 @@ func TestRunWithCoverage_BuildFailure(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
-	if err.Error() != "build: build failed" {
+	want := "[A-02] Server build command failed\n  ▶ build failed"
+	if err.Error() != want {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

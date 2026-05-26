@@ -3,11 +3,13 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/park-jun-woo/huma/internal/config"
 	"github.com/park-jun-woo/huma/internal/prompt"
+	"github.com/park-jun-woo/huma/internal/rule"
 	"github.com/park-jun-woo/huma/internal/runner"
 	"github.com/park-jun-woo/huma/internal/scanner"
 	"github.com/park-jun-woo/huma/internal/session"
@@ -19,14 +21,29 @@ var verifyCmd = &cobra.Command{
 	Short: "Run hurl test for current endpoint and advance if passing",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.Load()
+		if errors.Is(err, config.ErrNoManifest) {
+			fmt.Print(prompt.SetupPrompt())
+			return nil
+		}
 		if err != nil {
 			return fmt.Errorf("load config: %w", err)
 		}
 
+		if cfg.Server.Start == "" {
+			fmt.Print(prompt.ConfigPrompt())
+			return nil
+		}
+
 		sess, err := session.Load()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "No session found. Run 'huma scan' first.")
+			fmt.Fprintln(os.Stderr, rule.S01.Format("Run 'huma scan' first."))
 			os.Exit(1)
+		}
+
+		readyURL := cfg.BaseURL + cfg.Server.Ready
+		if !probeCheckFn(readyURL) {
+			fmt.Print(prompt.StartPrompt(cfg))
+			return nil
 		}
 
 		ep := sess.Current()
@@ -38,8 +55,8 @@ var verifyCmd = &cobra.Command{
 
 		hurl := runner.FindHurlFile(ep, cfg.HurlDir)
 		if hurl == "" {
-			fmt.Fprintf(os.Stderr, "No .hurl file found for %s %s\n", ep.Method, ep.Path)
-			fmt.Fprintf(os.Stderr, "Expected: %s\n", runner.HurlFileName(ep, cfg.HurlDir))
+			detail := fmt.Sprintf("%s %s\n  Expected: %s", ep.Method, ep.Path, runner.HurlFileName(ep, cfg.HurlDir))
+			fmt.Fprintln(os.Stderr, rule.H01.Format(detail))
 			os.Exit(1)
 		}
 
@@ -48,21 +65,33 @@ var verifyCmd = &cobra.Command{
 			return verifyWithCoverage(cfg, sess, ep, hurl)
 		}
 
-		// No coverage mode — behave as before
+		// No coverage mode — run hurl and check static response coverage
 		result, err := runner.Run(hurl, cfg.HurlVariables)
 		if err != nil {
-			return fmt.Errorf("hurl run failed: %w", err)
+			return fmt.Errorf(rule.H02.Format(err.Error()))
 		}
 
-		if result.Pass {
-			sess.MarkPass(ep.ID)
+		if !result.Pass {
+			fmt.Print(prompt.FailPrompt(ep, hurl, result.Feedback))
+			return nil
+		}
+
+		// Hurl passed — check static response coverage
+		respResult := checkResponseCoverageFn(ep, hurl)
+		if respResult != nil && respResult.Total > 0 && len(respResult.Missing) > 0 {
+			sess.MarkImprove(ep.ID, respResult.Percent)
 			if err := sess.Save(); err != nil {
 				return err
 			}
-			fmt.Print(prompt.PassPrompt(ep))
-		} else {
-			fmt.Print(prompt.FailPrompt(ep, hurl, result.Feedback))
+			fmt.Print(prompt.ResponseImprovePrompt(ep, hurl, respResult))
+			return nil
 		}
+
+		sess.MarkPass(ep.ID)
+		if err := sess.Save(); err != nil {
+			return err
+		}
+		fmt.Print(prompt.PassPrompt(ep))
 
 		return nil
 	},
@@ -73,7 +102,7 @@ func verifyWithCoverage(cfg *config.Config, sess *session.Session, ep *scanner.E
 	a := newAdapterFn(cfg)
 
 	if err := a.Build(); err != nil {
-		return fmt.Errorf("build: %w", err)
+		return fmt.Errorf(rule.A02.Format(err.Error()))
 	}
 
 	result, covResult, err := adapterRunFn(a, hurl, cfg.HurlVariables, ep.Source, ep.Handler)

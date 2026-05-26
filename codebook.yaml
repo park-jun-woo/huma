@@ -11,6 +11,9 @@ required:
     runner: "hurl file discovery and execution"
     source: "source code reading and handler extraction"
     cli: "CLI entrypoint and root command"
+    analyzer: "static response analysis"
+    hurlcheck: "hurl file status code verification"
+    rule: "validation rule ID definitions and formatting"
   type:
     command: "cobra command entrypoint"
     engine: "core logic orchestration"

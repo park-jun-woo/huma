@@ -3,10 +3,12 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/park-jun-woo/huma/internal/config"
+	"github.com/park-jun-woo/huma/internal/rule"
 	"github.com/park-jun-woo/huma/internal/session"
 	"github.com/spf13/cobra"
 )
@@ -16,13 +18,13 @@ var statusCmd = &cobra.Command{
 	Short: "Show progress summary",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		_, err := config.Load()
-		if err != nil {
+		if err != nil && !errors.Is(err, config.ErrNoManifest) {
 			return fmt.Errorf("load config: %w", err)
 		}
 
 		sess, err := session.Load()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "No session found. Run 'huma scan' first.")
+			fmt.Fprintln(os.Stderr, rule.S01.Format("Run 'huma scan' first."))
 			os.Exit(1)
 		}
 

@@ -1,22 +1,18 @@
-//ff:func feature=scan type=parser control=iteration dimension=1
-//ff:what Parses JSON or YAML endpoint input and generates IDs for each
+//ff:func feature=scan type=parser control=sequence
+//ff:what Parses endpoint input by detecting OpenAPI format or falling back to endpoint list format
 package scanner
 
 import "fmt"
 
 func ParseEndpoints(data []byte) ([]Endpoint, error) {
-	raw, err := unmarshalEndpoints(data)
+	if isOpenAPI(data) {
+		return parseOpenAPI(data)
+	}
+
+	raw, err := parseEndpointList(data)
 	if err != nil {
 		return nil, fmt.Errorf("parse endpoints: %w", err)
 	}
 
-	endpoints := make([]Endpoint, 0, len(raw))
-	for _, r := range raw {
-		ep := parseRawEndpoint(r)
-		if ep != nil {
-			endpoints = append(endpoints, *ep)
-		}
-	}
-
-	return endpoints, nil
+	return collectRawEndpoints(raw), nil
 }

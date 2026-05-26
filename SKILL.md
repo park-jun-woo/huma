@@ -146,13 +146,16 @@ Without `server` config: pass/fail only (no coverage tracking).
 
 ## Common Errors and Fixes
 
-| Error | Cause | Fix |
-|-------|-------|-----|
-| `No session found` | Haven't scanned yet | Run `huma scan --from endpoints.yaml` |
-| `No .hurl file found` | .hurl not at expected path | Check `huma next` output for expected filename |
-| `load config: ...` | Bad huma.yaml | Validate YAML syntax |
-| `parse endpoints: ...` | Bad endpoints file | Must be JSON array, YAML array, or YAML with `endpoints` key |
-| `hurl run failed` | hurl binary not installed or server not running | Install hurl: `cargo install hurl` or `brew install hurl` |
+All errors carry a rule ID. See `rulebook.md` for the full catalog.
+
+| Rule ID | Error | Cause | Fix |
+|---------|-------|-------|-----|
+| S-01 | `[S-01] No session found` | Haven't scanned yet | Run `huma scan --from endpoints.yaml` |
+| H-01 | `[H-01] Hurl file not found at expected path` | .hurl not at expected path | Check `huma next` output for expected filename |
+| M-02 | `[M-02] manifest.yaml parse error` | Bad huma.yaml | Validate YAML syntax |
+| E-01 | `[E-01] --from flag required` | Missing --from flag | Run `huma scan --from <file>` |
+| H-02 | `[H-02] Hurl execution failed` | hurl binary not installed or server not running | Install hurl: `cargo install hurl` or `brew install hurl` |
+| A-02 | `[A-02] Server build command failed` | Build command errored | Check build command in huma.yaml server.build |
 
 ## Conventions
 

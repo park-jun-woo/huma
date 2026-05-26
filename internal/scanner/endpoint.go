@@ -2,11 +2,14 @@
 //ff:what Endpoint represents a discovered API route with method, path, handler, and source location
 package scanner
 
+import "encoding/json"
+
 type Endpoint struct {
-	ID      string `json:"id"`
-	Method  string `json:"method"`
-	Path    string `json:"path"`
-	Handler string `json:"handler"`
-	Source  string `json:"source"`
-	Line    int    `json:"line"`
+	ID        string          `json:"id"`
+	Method    string          `json:"method"`
+	Path      string          `json:"path"`
+	Handler   string          `json:"handler"`
+	Source    string          `json:"source"`
+	Line      int             `json:"line"`
+	Responses json.RawMessage `json:"responses,omitempty"`
 }

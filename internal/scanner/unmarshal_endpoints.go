@@ -1,5 +1,5 @@
 //ff:func feature=scan type=parser control=sequence
-//ff:what Tries JSON then YAML formats to unmarshal raw endpoint data
+//ff:what Tries JSON then YAML formats to parse raw endpoint list data
 package scanner
 
 import (
@@ -9,7 +9,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func unmarshalEndpoints(data []byte) ([]rawEndpoint, error) {
+func parseEndpointList(data []byte) ([]rawEndpoint, error) {
 	var raw []rawEndpoint
 	if err := json.Unmarshal(data, &raw); err == nil {
 		return raw, nil

@@ -1,5 +1,11 @@
 # huma
 
+[![Version](https://img.shields.io/badge/version-v0.1.0-blue.svg)](https://github.com/park-jun-woo/huma/releases)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![skills.sh](https://skills.sh/b/park-jun-woo/huma)](https://skills.sh/park-jun-woo/huma)
+
+> **Recommended:** [Claude Code](https://claude.ai/code). Tested and optimized for Claude Code.
+
 **Hurl Master** — Ratchet tool that drives AI agents to write wall-to-wall [Hurl](https://hurl.dev) tests for SaaS backend APIs.
 
 ## Why huma
@@ -80,3 +86,14 @@ Fields: `method`, `path`, `handler`, `file` (source location), `line`.
 ```bash
 go install github.com/park-jun-woo/huma@latest
 ```
+
+Or clone and build with version:
+
+```bash
+git clone https://github.com/park-jun-woo/huma.git
+cd huma && make install
+```
+
+## License
+
+MIT — see [LICENSE](LICENSE).

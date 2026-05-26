@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/park-jun-woo/huma/internal/adapter"
+	"github.com/park-jun-woo/huma/internal/analyzer"
+	"github.com/park-jun-woo/huma/internal/hurlcheck"
 	"github.com/park-jun-woo/huma/internal/scanner"
 )
 
@@ -242,5 +244,87 @@ func TestImprovePrompt_NoUncovered(t *testing.T) {
 	result := ImprovePrompt(ep, "test.hurl", covResult)
 	if strings.Contains(result, "UNCOVERED") {
 		t.Fatal("should not have uncovered section")
+	}
+}
+
+func TestResponseImprovePrompt(t *testing.T) {
+	ep := &scanner.Endpoint{
+		ID: "ep1", Method: "POST", Path: "/users",
+		Handler: "CreateUser", Source: "handler.go", Line: 10,
+	}
+	respResult := &hurlcheck.ResponseCoverageResult{
+		Covered: 2,
+		Total:   4,
+		Percent: 50,
+		Missing: []analyzer.ResponseBranch{
+			{Status: 409, File: "handler.go", Line: 62, Code: "c.JSON(http.StatusConflict, ...)"},
+			{Status: 500, File: "handler.go", Line: 66},
+		},
+	}
+
+	result := ResponseImprovePrompt(ep, "hurl/post_users.hurl", respResult)
+	if !strings.Contains(result, "# IMPROVE  POST /users") {
+		t.Fatal("expected IMPROVE header")
+	}
+	if !strings.Contains(result, "Response coverage: 2/4 (50%)") {
+		t.Fatal("expected response coverage line")
+	}
+	if !strings.Contains(result, "MISSING") {
+		t.Fatal("expected MISSING section")
+	}
+	if !strings.Contains(result, "409") {
+		t.Fatal("expected 409 in missing")
+	}
+	if !strings.Contains(result, "500") {
+		t.Fatal("expected 500 in missing")
+	}
+	if !strings.Contains(result, "handler.go:62") {
+		t.Fatal("expected handler.go:62")
+	}
+}
+
+func TestResponseImprovePrompt_NoMissing(t *testing.T) {
+	ep := &scanner.Endpoint{
+		ID: "ep1", Method: "GET", Path: "/test",
+		Handler: "H", Source: "h.go", Line: 1,
+	}
+	respResult := &hurlcheck.ResponseCoverageResult{
+		Covered: 2,
+		Total:   2,
+		Percent: 100,
+	}
+
+	result := ResponseImprovePrompt(ep, "test.hurl", respResult)
+	if strings.Contains(result, "MISSING") {
+		t.Fatal("should not have missing section")
+	}
+}
+
+func TestFormatMissingBranch_WithCode(t *testing.T) {
+	branch := analyzer.ResponseBranch{
+		Status: 409, File: "internal/api/handler.go", Line: 62, Code: "c.JSON(...)",
+	}
+	result := formatMissingBranch(branch)
+	if !strings.Contains(result, "409") {
+		t.Fatal("expected 409")
+	}
+	if !strings.Contains(result, "handler.go:62") {
+		t.Fatal("expected handler.go:62")
+	}
+	if !strings.Contains(result, "c.JSON(...)") {
+		t.Fatal("expected code")
+	}
+}
+
+func TestFormatMissingBranch_WithoutCode(t *testing.T) {
+	branch := analyzer.ResponseBranch{
+		Status: 500, File: "handler.go", Line: 66,
+	}
+	result := formatMissingBranch(branch)
+	if !strings.Contains(result, "500") {
+		t.Fatal("expected 500")
+	}
+	if !strings.Contains(result, "handler.go:66") {
+		t.Fatal("expected handler.go:66")
 	}
 }
