@@ -18,7 +18,7 @@ func parseEndpointList(data []byte) ([]rawEndpoint, error) {
 	var wrapped struct {
 		Endpoints []rawEndpoint `yaml:"endpoints" json:"endpoints"`
 	}
-	if err := yaml.Unmarshal(data, &wrapped); err == nil && len(wrapped.Endpoints) > 0 {
+	if err := yaml.Unmarshal(data, &wrapped); err == nil && wrapped.Endpoints != nil {
 		return wrapped.Endpoints, nil
 	}
 
