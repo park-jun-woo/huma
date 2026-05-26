@@ -11,8 +11,8 @@ import (
 var checkResponseCoverageFn = checkResponseCoverage
 
 // checkResponseCoverage performs static response analysis on the endpoint.
-func checkResponseCoverage(ep *scanner.Endpoint, hurlFile string) *hurlcheck.ResponseCoverageResult {
-	branches := responseBranches(ep)
+func checkResponseCoverage(ep *scanner.Endpoint, hurlFile string, lang string) *hurlcheck.ResponseCoverageResult {
+	branches := responseBranches(ep, lang)
 	if len(branches) == 0 {
 		return nil
 	}

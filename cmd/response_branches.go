@@ -8,7 +8,7 @@ import (
 )
 
 // responseBranches extracts response branches from the endpoint.
-func responseBranches(ep *scanner.Endpoint) []analyzer.ResponseBranch {
+func responseBranches(ep *scanner.Endpoint, lang string) []analyzer.ResponseBranch {
 	if len(ep.Responses) > 0 {
 		branches := analyzer.ParseResponses(ep.Responses, ep.Source)
 		if len(branches) > 0 {
@@ -20,7 +20,10 @@ func responseBranches(ep *scanner.Endpoint) []analyzer.ResponseBranch {
 		return nil
 	}
 
-	a := &analyzer.GoAnalyzer{}
+	a := analyzer.NewAnalyzer(lang)
+	if a == nil {
+		return nil
+	}
 	branches, err := a.Analyze(ep.Source, ep.Handler, ep.Line, 0)
 	if err != nil {
 		return nil

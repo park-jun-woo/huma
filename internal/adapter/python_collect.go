@@ -23,17 +23,13 @@ func (a *PythonAdapter) Collect(handlerFile string, startLine, endLine int) (*Co
 		return nil, fmt.Errorf("coverage json: %w\n%s", err, string(out))
 	}
 
-	missingLines, err := coverage.ParseCoveragePy(coverageJSON, handlerFile, startLine, endLine)
+	executedLines, missingLines, err := coverage.ParseCoveragePy(coverageJSON, handlerFile, startLine, endLine)
 	if err != nil {
 		return nil, fmt.Errorf("parse coverage: %w", err)
 	}
 
-	totalCount := endLine - startLine + 1
-	uncoveredCount := len(missingLines)
-	coveredCount := totalCount - uncoveredCount
-	if coveredCount < 0 {
-		coveredCount = 0
-	}
+	totalCount := len(executedLines) + len(missingLines)
+	coveredCount := len(executedLines)
 
 	var pct float64
 	if totalCount > 0 {

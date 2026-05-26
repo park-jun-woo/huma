@@ -20,7 +20,7 @@ func TestCheckResponseCoverage_WithResponses(t *testing.T) {
 		Responses: json.RawMessage(`[{"status": 201, "line": 20}, {"status": 400, "line": 25}]`),
 	}
 
-	result := checkResponseCoverage(ep, hurlFile)
+	result := checkResponseCoverage(ep, hurlFile, "go")
 	if result == nil {
 		t.Fatal("expected non-nil result")
 	}
@@ -60,7 +60,7 @@ func GetUsers(c interface{}) {
 		Handler: "GetUsers", Source: srcFile, Line: 5,
 	}
 
-	result := checkResponseCoverage(ep, hurlFile)
+	result := checkResponseCoverage(ep, hurlFile, "go")
 	if result == nil {
 		t.Fatal("expected non-nil result")
 	}
@@ -81,7 +81,7 @@ func TestCheckResponseCoverage_NoSource(t *testing.T) {
 		Handler: "H", Source: "", Line: 0,
 	}
 
-	result := checkResponseCoverage(ep, "nonexistent.hurl")
+	result := checkResponseCoverage(ep, "nonexistent.hurl", "go")
 	if result != nil {
 		t.Fatal("expected nil for no source")
 	}
@@ -105,7 +105,7 @@ func H(c interface{}) {
 		Handler: "H", Source: srcFile, Line: 5,
 	}
 
-	result := checkResponseCoverage(ep, "/nonexistent/test.hurl")
+	result := checkResponseCoverage(ep, "/nonexistent/test.hurl", "go")
 	if result != nil {
 		t.Fatal("expected nil for invalid hurl file")
 	}
@@ -132,7 +132,7 @@ func H(c interface{}) {
 		Handler: "H", Source: srcFile, Line: 5,
 	}
 
-	result := checkResponseCoverage(ep, hurlFile)
+	result := checkResponseCoverage(ep, hurlFile, "go")
 	if result == nil {
 		t.Fatal("expected non-nil result")
 	}

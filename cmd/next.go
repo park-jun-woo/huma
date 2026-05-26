@@ -30,21 +30,10 @@ var nextCmd = &cobra.Command{
 			return fmt.Errorf("load config: %w", err)
 		}
 
-		if cfg.Server.Start == "" {
-			fmt.Print(prompt.ConfigPrompt())
-			return nil
-		}
-
 		sess, err := session.Load()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, rule.S01.Format("Run 'huma scan' first."))
 			os.Exit(1)
-		}
-
-		readyURL := cfg.BaseURL + cfg.Server.Ready
-		if !probeCheckFn(readyURL) {
-			fmt.Print(prompt.StartPrompt(cfg))
-			return nil
 		}
 
 		ep := sess.Current()
@@ -55,30 +44,30 @@ var nextCmd = &cobra.Command{
 		}
 
 		hurl := runner.FindHurlFile(ep, cfg.HurlDir)
-		if hurl == "" {
-			// TODO: no .hurl file yet
-			fmt.Print(prompt.TodoPrompt(ep, cfg.HurlDir, cfg.URLVar()))
-			return nil
-		}
 
-		// Coverage mode: server config is present
 		if cfg.Server.Start != "" {
+			// LIVE MODE: healthcheck → hurl execution → coverage
+			readyURL := cfg.BaseURL + cfg.Server.Ready
+			if !probeCheckFn(readyURL) {
+				fmt.Print(prompt.StartPrompt(cfg))
+				return nil
+			}
+			if hurl == "" {
+				fmt.Print(prompt.TodoPrompt(ep, cfg.HurlDir, cfg.URLVar()))
+				return nil
+			}
 			return runWithCoverage(cfg, sess, ep, hurl)
 		}
 
-		// No coverage mode — run hurl and check static response coverage
-		result, err := runner.Run(hurl, cfg.HurlVariables)
-		if err != nil {
-			return fmt.Errorf(rule.H02.Format(err.Error()))
-		}
-
-		if !result.Pass {
-			fmt.Print(prompt.FailPrompt(ep, hurl, result.Feedback))
+		// STATIC MODE: no server, static analysis only
+		if hurl == "" {
+			branches := responseBranches(ep, cfg.Scan.Lang)
+			fmt.Print(prompt.StaticTodoPrompt(ep, cfg.HurlDir, cfg.URLVar(), branches))
 			return nil
 		}
 
-		// Hurl passed — check static response coverage
-		respResult := checkResponseCoverageFn(ep, hurl)
+		// .hurl exists → check static response coverage
+		respResult := checkResponseCoverageFn(ep, hurl, cfg.Scan.Lang)
 		if respResult != nil && respResult.Total > 0 && len(respResult.Missing) > 0 {
 			sess.MarkImprove(ep.ID, respResult.Percent)
 			if err := sess.Save(); err != nil {
@@ -88,6 +77,7 @@ var nextCmd = &cobra.Command{
 			return nil
 		}
 
+		// All status codes covered → PASS
 		sess.MarkPass(ep.ID)
 		if err := sess.Save(); err != nil {
 			return err
@@ -130,7 +120,7 @@ func runWithCoverage(cfg *config.Config, sess *session.Session, ep *scanner.Endp
 	a := newAdapterFn(cfg)
 
 	if err := a.Build(); err != nil {
-		return fmt.Errorf(rule.A02.Format(err.Error()))
+		return fmt.Errorf("%s", rule.A02.Format(err.Error()))
 	}
 
 	result, covResult, err := adapterRunFn(a, hurl, cfg.HurlVariables, ep.Source, ep.Handler)

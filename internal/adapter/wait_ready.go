@@ -19,5 +19,5 @@ func (a *GoAdapter) WaitReady() error {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
-	return awaitReady(client, a.cfg.Ready, deadline, ticker.C)
+	return awaitReady(client, a.baseURL+a.cfg.Ready, deadline, ticker.C)
 }

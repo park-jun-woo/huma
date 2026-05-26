@@ -29,21 +29,10 @@ var verifyCmd = &cobra.Command{
 			return fmt.Errorf("load config: %w", err)
 		}
 
-		if cfg.Server.Start == "" {
-			fmt.Print(prompt.ConfigPrompt())
-			return nil
-		}
-
 		sess, err := session.Load()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, rule.S01.Format("Run 'huma scan' first."))
 			os.Exit(1)
-		}
-
-		readyURL := cfg.BaseURL + cfg.Server.Ready
-		if !probeCheckFn(readyURL) {
-			fmt.Print(prompt.StartPrompt(cfg))
-			return nil
 		}
 
 		ep := sess.Current()
@@ -54,30 +43,31 @@ var verifyCmd = &cobra.Command{
 		}
 
 		hurl := runner.FindHurlFile(ep, cfg.HurlDir)
+
+		if cfg.Server.Start != "" {
+			// LIVE MODE: healthcheck → hurl execution → coverage
+			readyURL := cfg.BaseURL + cfg.Server.Ready
+			if !probeCheckFn(readyURL) {
+				fmt.Print(prompt.StartPrompt(cfg))
+				return nil
+			}
+			if hurl == "" {
+				detail := fmt.Sprintf("%s %s\n  Expected: %s", ep.Method, ep.Path, runner.HurlFileName(ep, cfg.HurlDir))
+				fmt.Fprintln(os.Stderr, rule.H01.Format(detail))
+				os.Exit(1)
+			}
+			return verifyWithCoverage(cfg, sess, ep, hurl)
+		}
+
+		// STATIC MODE: no server, static analysis only
 		if hurl == "" {
 			detail := fmt.Sprintf("%s %s\n  Expected: %s", ep.Method, ep.Path, runner.HurlFileName(ep, cfg.HurlDir))
 			fmt.Fprintln(os.Stderr, rule.H01.Format(detail))
 			os.Exit(1)
 		}
 
-		// Coverage mode: server config is present
-		if cfg.Server.Start != "" {
-			return verifyWithCoverage(cfg, sess, ep, hurl)
-		}
-
-		// No coverage mode — run hurl and check static response coverage
-		result, err := runner.Run(hurl, cfg.HurlVariables)
-		if err != nil {
-			return fmt.Errorf(rule.H02.Format(err.Error()))
-		}
-
-		if !result.Pass {
-			fmt.Print(prompt.FailPrompt(ep, hurl, result.Feedback))
-			return nil
-		}
-
-		// Hurl passed — check static response coverage
-		respResult := checkResponseCoverageFn(ep, hurl)
+		// .hurl exists → check static response coverage
+		respResult := checkResponseCoverageFn(ep, hurl, cfg.Scan.Lang)
 		if respResult != nil && respResult.Total > 0 && len(respResult.Missing) > 0 {
 			sess.MarkImprove(ep.ID, respResult.Percent)
 			if err := sess.Save(); err != nil {
@@ -102,7 +92,7 @@ func verifyWithCoverage(cfg *config.Config, sess *session.Session, ep *scanner.E
 	a := newAdapterFn(cfg)
 
 	if err := a.Build(); err != nil {
-		return fmt.Errorf(rule.A02.Format(err.Error()))
+		return fmt.Errorf("%s", rule.A02.Format(err.Error()))
 	}
 
 	result, covResult, err := adapterRunFn(a, hurl, cfg.HurlVariables, ep.Source, ep.Handler)
