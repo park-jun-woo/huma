@@ -33,6 +33,13 @@ func parseOpenAPI(data []byte) ([]Endpoint, error) {
 		return nil, fmt.Errorf("openapi 'paths' is not a map")
 	}
 
+	var components map[string]interface{}
+	if compsRaw, ok := doc["components"].(map[string]interface{}); ok {
+		if schemas, ok := compsRaw["schemas"].(map[string]interface{}); ok {
+			components = schemas
+		}
+	}
+
 	var endpoints []Endpoint
 	for path, methodsRaw := range paths {
 		path = strings.TrimRight(path, "/")
@@ -71,6 +78,7 @@ func parseOpenAPI(data []byte) ([]Endpoint, error) {
 			if resp := extractOpenAPIResponses(op); resp != nil {
 				ep.Responses = resp
 			}
+			ep.ResponseFields = extractFieldsFromOp(op, components)
 			endpoints = append(endpoints, ep)
 		}
 	}

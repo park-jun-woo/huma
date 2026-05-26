@@ -5,11 +5,12 @@ package scanner
 import "encoding/json"
 
 type Endpoint struct {
-	ID        string          `json:"id"`
-	Method    string          `json:"method"`
-	Path      string          `json:"path"`
-	Handler   string          `json:"handler"`
-	Source    string          `json:"source"`
-	Line      int             `json:"line"`
-	Responses json.RawMessage `json:"responses,omitempty"`
+	ID             string           `json:"id"`
+	Method         string           `json:"method"`
+	Path           string           `json:"path"`
+	Handler        string           `json:"handler"`
+	Source         string           `json:"source"`
+	Line           int              `json:"line"`
+	Responses      json.RawMessage  `json:"responses,omitempty"`
+	ResponseFields []ResponseField  `json:"responseFields,omitempty"`
 }

@@ -11,9 +11,10 @@
 ## Why huma
 
 - **0 → 100% endpoint coverage** — Point huma at any backend. Every endpoint gets a Hurl test. No exceptions.
-- **Agent-native** — `huma next` outputs exactly what an AI agent needs: handler source, hurl example, file path. Copy-paste-free loop.
+- **Agent-native** — `huma next` outputs exactly what an AI agent needs: handler source, expected responses, hurl example, file path. Copy-paste-free loop.
 - **Ratchet guarantee** — Coverage only goes up, never down. Once an endpoint passes, it stays passed.
-- **10 minutes to first test** — `scan → next → write → verify`. Four commands. No config ceremony.
+- **OpenAPI-first** — Feed it an OpenAPI yaml and go. No manual endpoint listing needed.
+- **Two modes** — Static mode (no server, analysis only) for scaffolding. Live mode (server running) for full verification.
 - **Language-agnostic** — Go, Python, Node.js. Same workflow, same ratchet.
 
 ## Quick start
@@ -24,28 +25,54 @@ npx skills add park-jun-woo/huma
 
 That's it. Your AI agent now knows how to run the full ratchet loop. See [SKILL.md](SKILL.md) for details.
 
+## How it works
+
+```
+openapi.yaml ──► huma scan ──► session
+                                  │
+                            huma next ◄──┐
+                              │          │
+                      ┌───────┴───────┐  │
+                      │  TODO         │  │
+                      │  (no .hurl)   │  │
+                      └───────┬───────┘  │
+                        agent writes     │
+                        .hurl file       │
+                              │          │
+                      ┌───────┴───────┐  │
+                      │  PASS/IMPROVE │──┘
+                      └───────────────┘
+```
+
+```bash
+# 1. Scan endpoints from OpenAPI (or auto-detect openapi.yaml)
+huma scan --from openapi.yaml
+
+# 2. Ratchet loop
+huma next     # shows TODO → agent writes .hurl → run again
+huma status   # check progress
+```
+
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `huma scan --from <file>` | Read endpoints from JSON/YAML file (or `-` for stdin) and create a session |
-| `huma next` | Show next untested endpoint, or verify current one and advance |
-| `huma verify` | Run hurl test for current endpoint and advance if passing |
-| `huma status` | Show progress summary (todo/pass/done counts) |
-| `huma prompt` | Output agent prompt for current TODO endpoint (no side effects) |
+| `huma scan` | Auto-detect `openapi.yaml` and scan endpoints |
+| `huma scan --from <file>` | Scan from OpenAPI, JSON array, or YAML |
+| `huma next` | Show next TODO, or verify current and advance |
+| `huma verify` | Run hurl test and advance if passing |
+| `huma status` | Show progress (TODO/PASS/IMPROVE/DONE) |
+| `huma prompt` | Output agent prompt for current TODO (no side effects) |
 
-## Ratchet states
+## Two modes
 
-Each endpoint progresses through these states:
+### Static mode (no server)
 
-- **TODO** — No .hurl file yet. `huma next` outputs a prompt with handler source and a hurl example.
-- **PASS** — Hurl test passes (and coverage is 100% or no server config).
-- **IMPROVE** — Hurl passes but coverage < 100%. Agent gets uncovered lines to add more test entries.
-- **DONE** — Coverage stalled after retry. Endpoint is accepted at current coverage.
+When `manifest.yaml` has no `testing.server` block, huma works without a running server:
 
-## Coverage mode
-
-When `manifest.yaml` includes a `testing.server` block, huma builds, starts, and instruments the server to measure per-handler line coverage:
+- Extracts expected response status codes from OpenAPI or source analysis
+- Checks hurl files for status code coverage
+- Guides the agent to write hurl test scaffolds
 
 ```yaml
 apiVersion: yongol/v1
@@ -61,36 +88,58 @@ testing:
   hurl_dir: "hurl"
   hurl_variables:
     host: "http://localhost:8080"
+```
+
+### Live mode (server running)
+
+Add `testing.server` to run hurl tests against a live server with runtime coverage:
+
+```yaml
+testing:
+  # ... same as above, plus:
   server:
     build: "go build -o ./server.test ./cmd/server"
     start: "./server.test"
     ready: "/api/health"
 ```
 
-Without the `testing.server` block, huma runs in static mode (no server, static analysis only).
+huma builds, starts, and instruments the server. Healthcheck failure prompts the agent to start the server first.
+
+## Ratchet states
+
+| State | Meaning |
+|-------|---------|
+| **TODO** | No .hurl file. Agent gets handler source + expected responses + hurl example. |
+| **IMPROVE** | Hurl exists but missing response status codes. Agent gets specific missing codes. |
+| **PASS** | All expected responses covered. |
+| **DONE** | Coverage stalled after retry. Accepted at current level. |
 
 ## Supported languages
 
-| Language | Adapter | `scan.lang` |
-|----------|---------|-------------|
-| Go | `GoAdapter` | `go` (default) |
-| Python | `PythonAdapter` | `python` |
-| Node.js | `NodeAdapter` | `node` |
+| Language | Adapter | Analyzer | `backend.lang` |
+|----------|---------|----------|-----------------|
+| Go | GoAdapter | go/ast | `go` (default) |
+| Python | PythonAdapter | regex | `python` |
+| Node.js | NodeAdapter | regex | `node` |
 
-## Endpoint input format
+## Pipeline
 
-JSON array, YAML array, or YAML with `endpoints` key:
+huma fits in the juicer → huma → yongol pipeline:
 
-```yaml
-endpoints:
-  - method: GET
-    path: /api/v1/users
-    handler: ListUsers
-    file: internal/api/user/handler.go
-    line: 25
+```
+Legacy codebase
+    │
+    ▼
+juicer ──► openapi.yaml    (extract API spec)
+    │
+    ▼
+huma ──► hurl/*.hurl        (generate tests)
+    │
+    ▼
+yongol ──► refactored code  (SSOT-based rebuild)
 ```
 
-Fields: `method`, `path`, `handler`, `file` (source location), `line`.
+`manifest.yaml` is shared across huma and yongol — zero transition cost.
 
 ## Install
 
@@ -98,7 +147,7 @@ Fields: `method`, `path`, `handler`, `file` (source location), `line`.
 go install github.com/park-jun-woo/huma@latest
 ```
 
-Or clone and build with version:
+Or clone and build:
 
 ```bash
 git clone https://github.com/park-jun-woo/huma.git

@@ -31,6 +31,7 @@ func StaticTodoPrompt(ep *scanner.Endpoint, hurlDir, urlVar string, branches []a
 		b.WriteString("\n## Expected responses (static analysis)\n\n")
 		lines, statusList := collectBranchSection(branches)
 		b.WriteString(lines)
+		b.WriteString(formatResponseFields(ep.ResponseFields))
 		b.WriteString("\n## Instructions\n\n")
 		hurlFile := runner.HurlFileName(ep, hurlDir)
 		b.WriteString(fmt.Sprintf("1. Write %s\n", hurlFile))
@@ -40,6 +41,8 @@ func StaticTodoPrompt(ep *scanner.Endpoint, hurlDir, urlVar string, branches []a
 		b.WriteString("\n## Hurl example\n\n")
 		b.WriteString(hurlExample(ep.Method, ep.Path, urlVar))
 		b.WriteString("\n")
+
+		b.WriteString(formatResponseFields(ep.ResponseFields))
 
 		hurlFile := runner.HurlFileName(ep, hurlDir)
 		b.WriteString("\n## Instructions\n\n")

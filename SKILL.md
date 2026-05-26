@@ -27,49 +27,32 @@ metadata:
 go install github.com/park-jun-woo/huma@latest
 ```
 
+Requires **Go 1.22+**. No cgo dependency — pure Go.
+
 ## Commands
 
 | Command | Purpose |
 |---------|---------|
-| `huma scan --from <file>` | Read endpoints from JSON/YAML and create a session |
-| `huma next` | Show next TODO endpoint, or verify current and advance |
-| `huma verify` | Run hurl test for current endpoint and advance if passing |
-| `huma status` | Show progress (todo/pass/done counts) |
+| `huma scan` | Auto-detect `openapi.yaml` and scan endpoints |
+| `huma scan --from <file>` | Scan from OpenAPI, JSON array, or YAML |
+| `huma next` | Show next TODO, or verify current and advance |
+| `huma verify` | Run hurl test and advance if passing |
+| `huma status` | Show progress (TODO/PASS/IMPROVE/DONE) |
 | `huma prompt` | Output agent prompt for current TODO (no side effects) |
 
 ## Workflow
 
 ```
-1. Create endpoints.yaml    — list every endpoint (method, path, handler, file, line)
-2. Create manifest.yaml      — testing block with base_url, hurl_dir, variables
-3. huma scan --from endpoints.yaml
-4. Loop:
-   a. huma next             — read the TODO prompt
+1. Create manifest.yaml      — project config + testing block
+2. huma scan --from openapi.yaml   (or just `huma scan` to auto-detect)
+3. Loop:
+   a. huma next             — read the TODO prompt (includes expected responses)
    b. Write the .hurl file at the path shown
    c. huma next             — verify and advance to next endpoint
    d. Repeat until "All complete"
 ```
 
-### Step 1: endpoints.yaml
-
-```yaml
-endpoints:
-  - method: GET
-    path: /api/health
-    handler: HealthCheck
-    file: cmd/server/main.go
-    line: 42
-  - method: POST
-    path: /api/v1/auth/login
-    handler: Login
-    file: internal/api/auth/handler.go
-    line: 50
-```
-
-Fields: `method`, `path`, `handler`, `file` (source location), `line`.
-Accepts JSON array, YAML array, or YAML with `endpoints` key.
-
-### Step 2: manifest.yaml
+### Step 1: manifest.yaml
 
 ```yaml
 apiVersion: yongol/v1
@@ -85,35 +68,40 @@ testing:
   hurl_dir: "hurl"
   hurl_variables:
     host: "http://localhost:8080"
-  server:
-    build: "go build -o ./server.test ./cmd/server"
-    start: "./server.test"
-    ready: "/api/health"
 ```
 
-Without the `testing.server` block, huma runs in static mode (no server, static analysis only).
+Without `testing.server` → **static mode** (no server, static analysis only).
+With `testing.server` → **live mode** (server running, hurl execution + runtime coverage).
 
-### Step 3: Scan
+### Step 2: Scan
 
 ```bash
-huma scan --from endpoints.yaml
-# Scanned 42 endpoints
+huma scan --from openapi.yaml
+# Scanned 65 endpoints
+#   PASS:    47 (existing hurl, all responses covered)
+#   IMPROVE:  8 (existing hurl, missing responses)
+#   TODO:    10 (no hurl file)
 ```
 
-### Step 4: Ratchet loop
+huma accepts OpenAPI yaml (auto-detected by `openapi:` key), JSON arrays, or YAML endpoint lists.
+Existing hurl files are pre-checked during scan — no need to run `huma next` for already-complete endpoints.
+
+### Step 3: Ratchet loop
 
 ```bash
 huma next
-# TODO  GET /api/v1/users
-# Source: internal/api/user/handler.go:25
-# Handler: ListUsers
+# TODO  POST /api/v1/auth/login
+# Handler: Login
 #
-# ## Handler source
-# func (h *Handler) ListUsers(c *gin.Context) { ... }
+# ## Expected responses (from OpenAPI)
+#   200 — OK
+#   400 — Bad Request
+#   401 — Unauthorized
 #
 # ## Instructions
-# 1. Write hurl/get_api_v1_users.hurl
-# 2. Run `huma next`
+# 1. Write hurl/post_api_v1_auth_login.hurl
+# 2. Include test entries for status 200, 400, 401
+# 3. Run `huma next`
 ```
 
 Write the .hurl file, then run `huma next` again. On pass it advances to the next endpoint.
@@ -135,16 +123,22 @@ huma expects: `{hurl_dir}/{method}_{path_with_underscores}.hurl`
 
 Example: `GET /api/v1/admin/buildings` → `hurl/get_api_v1_admin_buildings.hurl`
 
-### Coverage Mode
+### Static Mode (no server)
+
+Without `testing.server`, huma uses OpenAPI responses and/or source code static analysis to:
+- Show expected response status codes in TODO prompt
+- Check hurl files for status code coverage without running them
+- Mark PASS when all expected codes are covered in hurl assertions
+
+### Live Mode (server running)
 
 With `testing.server` config, huma:
-1. Builds instrumented binary
-2. Starts server, waits for ready endpoint
-3. Runs hurl test
-4. Collects per-handler line coverage
-5. Reports uncovered lines in IMPROVE prompt
-
-Without the `testing.server` block: static mode (no server, static analysis only).
+1. Checks server healthcheck (prompts to start if down)
+2. Builds instrumented binary
+3. Starts server, waits for ready endpoint
+4. Runs hurl test
+5. Collects per-handler line coverage
+6. Reports uncovered lines in IMPROVE prompt
 
 ## Common Errors and Fixes
 
@@ -152,10 +146,10 @@ All errors carry a rule ID. See `rulebook.md` for the full catalog.
 
 | Rule ID | Error | Cause | Fix |
 |---------|-------|-------|-----|
-| S-01 | `[S-01] No session found` | Haven't scanned yet | Run `huma scan --from endpoints.yaml` |
+| S-01 | `[S-01] No session found` | Haven't scanned yet | Run `huma scan --from openapi.yaml` |
 | H-01 | `[H-01] Hurl file not found at expected path` | .hurl not at expected path | Check `huma next` output for expected filename |
 | M-02 | `[M-02] manifest.yaml parse error` | Bad manifest.yaml | Validate YAML syntax |
-| E-01 | `[E-01] --from flag required` | Missing --from flag | Run `huma scan --from <file>` |
+| E-01 | `[E-01] No OpenAPI file found` | No openapi.yaml and --from not specified | Place openapi.yaml in project root or use `--from` |
 | H-02 | `[H-02] Hurl execution failed` | hurl binary not installed or server not running | Install hurl: `cargo install hurl` or `brew install hurl` |
 | A-02 | `[A-02] Server build command failed` | Build command errored | Check build command in manifest.yaml testing.server.build |
 
@@ -168,8 +162,16 @@ All errors carry a rule ID. See `rulebook.md` for the full catalog.
 
 ## Supported Languages
 
-| Language | `scan.lang` | Adapter |
-|----------|-------------|---------|
-| Go | `go` (default) | GoAdapter |
-| Python | `python` | PythonAdapter |
-| Node.js | `node` | NodeAdapter |
+| Language | `backend.lang` | Adapter | Analyzer |
+|----------|----------------|---------|----------|
+| Go | `go` (default) | GoAdapter | go/ast |
+| Python | `python` | PythonAdapter | regex |
+| Node.js | `node` | NodeAdapter | regex |
+
+## Full Documentation
+
+| Document | Purpose |
+|----------|---------|
+| `SKILL.md` | Agent workflow and commands |
+| `rulebook.md` | All 33 validation rules with IDs |
+| `README.md` | Quick start and overview |

@@ -50,7 +50,7 @@ import "net/http"
 
 func GetUsers(c interface{}) {
 	c.JSON(http.StatusOK, nil)
-	c.JSON(http.StatusInternalServerError, nil)
+	c.JSON(http.StatusBadRequest, nil)
 }
 `
 	os.WriteFile(srcFile, []byte(src), 0o644)

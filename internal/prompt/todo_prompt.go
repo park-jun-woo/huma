@@ -30,6 +30,8 @@ func TodoPrompt(ep *scanner.Endpoint, hurlDir, urlVar string) string {
 	b.WriteString(hurlExample(ep.Method, ep.Path, urlVar))
 	b.WriteString("\n")
 
+	b.WriteString(formatResponseFields(ep.ResponseFields))
+
 	hurlFile := runner.HurlFileName(ep, hurlDir)
 	b.WriteString("\n## Instructions\n\n")
 	b.WriteString(fmt.Sprintf("1. Write %s\n", hurlFile))

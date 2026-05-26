@@ -112,6 +112,100 @@ paths:
 	}
 }
 
+func TestParseOpenAPI_WithResponseSchema(t *testing.T) {
+	data := []byte(`
+openapi: '3.0.0'
+info:
+  title: Test API
+components:
+  schemas:
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/UserData'
+    UserData:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+paths:
+  /api/v1/auth/login:
+    post:
+      operationId: Login
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        400:
+          description: Bad Request
+`)
+
+	endpoints, err := parseOpenAPI(data)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(endpoints) != 1 {
+		t.Fatalf("expected 1 endpoint, got %d", len(endpoints))
+	}
+
+	ep := endpoints[0]
+	if len(ep.ResponseFields) == 0 {
+		t.Fatal("expected non-empty ResponseFields")
+	}
+
+	byPath := make(map[string]string)
+	for _, f := range ep.ResponseFields {
+		byPath[f.Path] = f.Type
+	}
+
+	if byPath["$.success"] != "boolean" {
+		t.Fatal("expected $.success — boolean")
+	}
+	if byPath["$.data.id"] != "integer" {
+		t.Fatal("expected $.data.id — integer")
+	}
+	if byPath["$.data.email"] != "string" {
+		t.Fatal("expected $.data.email — string")
+	}
+}
+
+func TestParseOpenAPI_NoResponseSchema(t *testing.T) {
+	data := []byte(`
+openapi: '3.0.0'
+info:
+  title: Test API
+paths:
+  /api/v1/users:
+    get:
+      operationId: ListUsers
+      responses:
+        200:
+          description: OK
+`)
+
+	endpoints, err := parseOpenAPI(data)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(endpoints) != 1 {
+		t.Fatalf("expected 1 endpoint, got %d", len(endpoints))
+	}
+
+	if len(endpoints[0].ResponseFields) != 0 {
+		t.Fatalf("expected no ResponseFields, got %d", len(endpoints[0].ResponseFields))
+	}
+}
+
 func TestParseOpenAPI_MissingPaths(t *testing.T) {
 	data := []byte(`
 openapi: '3.0.0'

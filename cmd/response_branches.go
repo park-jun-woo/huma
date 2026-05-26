@@ -12,22 +12,10 @@ func responseBranches(ep *scanner.Endpoint, lang string) []analyzer.ResponseBran
 	if len(ep.Responses) > 0 {
 		branches := analyzer.ParseResponses(ep.Responses, ep.Source)
 		if len(branches) > 0 {
-			return branches
+			return filterClientBranches(branches)
 		}
 	}
 
-	if ep.Source == "" {
-		return nil
-	}
-
-	a := analyzer.NewAnalyzer(lang)
-	if a == nil {
-		return nil
-	}
-	branches, err := a.Analyze(ep.Source, ep.Handler, ep.Line, 0)
-	if err != nil {
-		return nil
-	}
-
-	return branches
+	branches := analyzeBranches(ep, lang)
+	return filterClientBranches(branches)
 }
