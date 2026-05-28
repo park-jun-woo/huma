@@ -160,6 +160,32 @@ testing:
     ready: "/health"
 ```
 
+### Supabase Edge Functions
+
+```yaml
+apiVersion: yongol/v1
+kind: Project
+metadata:
+  name: my-edge-functions
+backend:
+  lang: deno
+  framework: supabase
+  module: my-edge-functions
+testing:
+  base_url: "http://localhost:54321"
+  hurl_dir: "hurl"
+  hurl_variables:
+    host: "http://localhost:54321"
+    supabase_anon_key: "eyJ..."
+    supabase_service_role_key: "eyJ..."
+  deps:
+    up: "supabase start"
+    down: "supabase stop"
+  server:
+    start: "supabase functions serve"
+    ready: "/functions/v1/health"
+```
+
 ## Ratchet states
 
 | State | Meaning |
@@ -178,6 +204,7 @@ testing:
 | Node.js | NodeAdapter | regex | `node` |
 | NestJS | NodeAdapter | regex | `nestjs` |
 | Express | NodeAdapter | regex | `express` |
+| Supabase Edge Functions | DenoAdapter | regex | `deno` |
 
 ## Pipeline
 

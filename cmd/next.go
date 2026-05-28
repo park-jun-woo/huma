@@ -110,6 +110,8 @@ var newAdapterFn = func(cfg *config.Config) adapter.Adapter {
 		return adapter.NewPythonAdapter(cfg)
 	case "node", "javascript", "typescript", "nestjs", "express":
 		return adapter.NewNodeAdapter(cfg)
+	case "deno", "edge-functions":
+		return adapter.NewDenoAdapter(cfg)
 	default:
 		return adapter.NewGoAdapter(cfg)
 	}

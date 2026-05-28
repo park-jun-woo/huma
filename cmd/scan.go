@@ -39,19 +39,29 @@ var scanCmd = &cobra.Command{
 			hurlDir = cfg.HurlDir
 		}
 
-		var data []byte
-		if fromFlag == "-" {
-			data, err = io.ReadAll(os.Stdin)
-		} else {
-			data, err = os.ReadFile(fromFlag)
-		}
-		if err != nil {
-			return fmt.Errorf("read input: %w", err)
-		}
+		var endpoints []scanner.Endpoint
 
-		endpoints, err := scanner.ParseEndpoints(data)
-		if err != nil {
-			return fmt.Errorf("parse endpoints: %w", err)
+		info, statErr := os.Stat(fromFlag)
+		if fromFlag != "-" && statErr == nil && info.IsDir() {
+			endpoints, err = scanner.ParseEdgeFunctions(fromFlag)
+			if err != nil {
+				return fmt.Errorf("scan edge functions: %w", err)
+			}
+		} else {
+			var data []byte
+			if fromFlag == "-" {
+				data, err = io.ReadAll(os.Stdin)
+			} else {
+				data, err = os.ReadFile(fromFlag)
+			}
+			if err != nil {
+				return fmt.Errorf("read input: %w", err)
+			}
+
+			endpoints, err = scanner.ParseEndpoints(data)
+			if err != nil {
+				return fmt.Errorf("parse endpoints: %w", err)
+			}
 		}
 
 		sess, err := session.Load()

@@ -11,6 +11,8 @@ func NewAnalyzer(lang string) Analyzer {
 		return &PythonAnalyzer{}
 	case "node", "javascript", "typescript", "nestjs", "express":
 		return &NodeAnalyzer{}
+	case "deno", "edge-functions":
+		return &DenoAnalyzer{}
 	default:
 		return nil
 	}

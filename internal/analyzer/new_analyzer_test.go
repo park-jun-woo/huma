@@ -34,6 +34,18 @@ func TestNewAnalyzer_Node(t *testing.T) {
 	}
 }
 
+func TestNewAnalyzer_Deno(t *testing.T) {
+	for _, lang := range []string{"deno", "edge-functions"} {
+		a := NewAnalyzer(lang)
+		if a == nil {
+			t.Fatalf("expected DenoAnalyzer for %q, got nil", lang)
+		}
+		if _, ok := a.(*DenoAnalyzer); !ok {
+			t.Fatalf("expected *DenoAnalyzer for %q", lang)
+		}
+	}
+}
+
 func TestNewAnalyzer_Unsupported(t *testing.T) {
 	a := NewAnalyzer("rust")
 	if a != nil {
