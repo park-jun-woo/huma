@@ -3,7 +3,7 @@ name: huma
 description: Ratchet tool for wall-to-wall Hurl API test generation. Use when writing Hurl tests for SaaS backends, when an endpoint lacks test coverage, or when asked to generate API integration tests. Triggers on keywords: hurl, endpoint test, API test, ratchet, coverage.
 metadata:
   author: park-jun-woo
-  version: "0.1.2"
+  version: "0.1.3"
 ---
 
 # huma — Ratchet-driven Hurl test generator for SaaS APIs
@@ -168,6 +168,7 @@ All errors carry a rule ID. See `rulebook.md` for the full catalog.
 | Python | `python` | PythonAdapter | regex |
 | Node.js | `node` | NodeAdapter | regex |
 | NestJS | `nestjs` | NodeAdapter | regex |
+| Express | `express` | NodeAdapter | regex |
 
 ## Full Documentation
 

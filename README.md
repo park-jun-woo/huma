@@ -4,7 +4,7 @@
   <img src="huma.webp" alt="huma" width="480" />
 </p>
 
-[![Version](https://img.shields.io/badge/version-v0.1.2-blue.svg)](https://github.com/park-jun-woo/huma/releases)
+[![Version](https://img.shields.io/badge/version-v0.1.3-blue.svg)](https://github.com/park-jun-woo/huma/releases)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![skills.sh](https://skills.sh/b/park-jun-woo/huma)](https://skills.sh/park-jun-woo/huma)
 
@@ -138,6 +138,28 @@ testing:
     ready: "/health"
 ```
 
+### Express
+
+```yaml
+apiVersion: yongol/v1
+kind: Project
+metadata:
+  name: my-express-app
+backend:
+  lang: express
+  framework: express
+  module: my-express-app
+testing:
+  base_url: "http://localhost:3000"
+  hurl_dir: "hurl"
+  hurl_variables:
+    host: "http://localhost:3000"
+  server:
+    build: "npm install"
+    start: "node src/index.js"
+    ready: "/health"
+```
+
 ## Ratchet states
 
 | State | Meaning |
@@ -155,6 +177,7 @@ testing:
 | Python | PythonAdapter | regex | `python` |
 | Node.js | NodeAdapter | regex | `node` |
 | NestJS | NodeAdapter | regex | `nestjs` |
+| Express | NodeAdapter | regex | `express` |
 
 ## Pipeline
 

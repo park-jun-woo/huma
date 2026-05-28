@@ -45,5 +45,13 @@ func matchNodeLine(line string) int {
 		}
 	}
 
+	if expressRedirectImplicit.MatchString(line) {
+		return 302
+	}
+
+	if expressImplicit200.MatchString(line) {
+		return 200
+	}
+
 	return 0
 }

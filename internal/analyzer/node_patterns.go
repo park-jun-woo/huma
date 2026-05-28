@@ -15,6 +15,10 @@ var nodePatterns = []*regexp.Regexp{
 	regexp.MustCompile(`@HttpCode\((\d+)\)`),
 	// new HttpException("...", 400) or new HttpError("...", 400)
 	regexp.MustCompile(`new Http(?:Exception|Error)\([^,]*,\s*(\d+)\)`),
+	// res.redirect(301, '/url') — explicit redirect status
+	regexp.MustCompile(`\.redirect\((\d+)\s*,`),
+	// createError(404) or createError(404, 'msg') (http-errors)
+	regexp.MustCompile(`createError\((\d+)`),
 }
 
 // nestExceptionPattern matches NestJS built-in exception classes.
@@ -86,3 +90,9 @@ var apiShorthandStatus = map[string]int{
 	"Conflict":            409,
 	"UnprocessableEntity": 422,
 }
+
+// expressImplicit200 matches res.json() or res.send() without .status() — implicit 200.
+var expressImplicit200 = regexp.MustCompile(`\bres\.(?:json|send)\(`)
+
+// expressRedirectImplicit matches .redirect('/url') without explicit status code — implicit 302.
+var expressRedirectImplicit = regexp.MustCompile(`\.redirect\(\s*['"]`)

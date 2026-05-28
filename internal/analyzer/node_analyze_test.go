@@ -381,3 +381,121 @@ async handler() {
 		t.Fatal("expected 404 from @ApiNotFoundResponse")
 	}
 }
+
+func TestNodeAnalyzer_ExpressImplicit200(t *testing.T) {
+	src := `function getUsers(req, res) {
+    const users = db.findAll();
+    res.json(users);
+}
+`
+	dir := t.TempDir()
+	file := filepath.Join(dir, "handler.js")
+	os.WriteFile(file, []byte(src), 0o644)
+
+	a := &NodeAnalyzer{}
+	branches, err := a.Analyze(file, "getUsers", 0, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(branches) != 1 {
+		t.Fatalf("expected 1 branch, got %d", len(branches))
+	}
+	if branches[0].Status != 200 {
+		t.Fatalf("expected 200, got %d", branches[0].Status)
+	}
+}
+
+func TestNodeAnalyzer_ExpressStatusJsonNoConflict(t *testing.T) {
+	src := `function createUser(req, res) {
+    res.status(201).json(user);
+}
+`
+	dir := t.TempDir()
+	file := filepath.Join(dir, "handler.js")
+	os.WriteFile(file, []byte(src), 0o644)
+
+	a := &NodeAnalyzer{}
+	branches, err := a.Analyze(file, "createUser", 0, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(branches) != 1 {
+		t.Fatalf("expected 1 branch, got %d", len(branches))
+	}
+	if branches[0].Status != 201 {
+		t.Fatalf("expected 201, got %d", branches[0].Status)
+	}
+}
+
+func TestNodeAnalyzer_ExpressRedirect(t *testing.T) {
+	src := `function handler(req, res) {
+    res.redirect(301, '/new-url');
+    res.redirect('/other-url');
+}
+`
+	dir := t.TempDir()
+	file := filepath.Join(dir, "handler.js")
+	os.WriteFile(file, []byte(src), 0o644)
+
+	a := &NodeAnalyzer{}
+	branches, err := a.Analyze(file, "handler", 0, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(branches) != 2 {
+		t.Fatalf("expected 2 branches, got %d", len(branches))
+	}
+
+	statuses := map[int]bool{}
+	for _, b := range branches {
+		statuses[b.Status] = true
+	}
+	if !statuses[301] {
+		t.Fatal("expected 301")
+	}
+	if !statuses[302] {
+		t.Fatal("expected 302")
+	}
+}
+
+func TestNodeAnalyzer_CreateError(t *testing.T) {
+	src := `const createError = require('http-errors');
+
+function getUser(req, res, next) {
+    const user = db.find(req.params.id);
+    if (!user) {
+        return next(createError(404, 'User not found'));
+    }
+    if (!user.active) {
+        return next(createError(403, 'User inactive'));
+    }
+    res.json(user);
+}
+`
+	dir := t.TempDir()
+	file := filepath.Join(dir, "handler.js")
+	os.WriteFile(file, []byte(src), 0o644)
+
+	a := &NodeAnalyzer{}
+	branches, err := a.Analyze(file, "getUser", 0, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(branches) != 3 {
+		t.Fatalf("expected 3 branches, got %d", len(branches))
+	}
+
+	statuses := map[int]bool{}
+	for _, b := range branches {
+		statuses[b.Status] = true
+	}
+	if !statuses[404] {
+		t.Fatal("expected 404")
+	}
+	if !statuses[403] {
+		t.Fatal("expected 403")
+	}
+	if !statuses[200] {
+		t.Fatal("expected 200 from res.json()")
+	}
+}

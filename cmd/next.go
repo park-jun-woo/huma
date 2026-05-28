@@ -108,7 +108,7 @@ var newAdapterFn = func(cfg *config.Config) adapter.Adapter {
 	switch cfg.Scan.Lang {
 	case "python":
 		return adapter.NewPythonAdapter(cfg)
-	case "node", "javascript", "typescript", "nestjs":
+	case "node", "javascript", "typescript", "nestjs", "express":
 		return adapter.NewNodeAdapter(cfg)
 	default:
 		return adapter.NewGoAdapter(cfg)
