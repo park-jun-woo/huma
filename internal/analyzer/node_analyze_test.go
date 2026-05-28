@@ -244,3 +244,140 @@ func TestNodeAnalyzer_AllNestExceptions(t *testing.T) {
 		}
 	}
 }
+
+func TestNodeAnalyzer_ExtendedNestExceptions(t *testing.T) {
+	src := `async handler() {
+    throw new MethodNotAllowedException('method not allowed');
+    throw new NotAcceptableException('not acceptable');
+    throw new RequestTimeoutException('timeout');
+    throw new GoneException('gone');
+    throw new PreconditionFailedException('precondition failed');
+    throw new PayloadTooLargeException('too large');
+    throw new UnsupportedMediaTypeException('unsupported');
+    throw new UnprocessableEntityException('unprocessable');
+}
+`
+	dir := t.TempDir()
+	file := filepath.Join(dir, "service.ts")
+	os.WriteFile(file, []byte(src), 0o644)
+
+	a := &NodeAnalyzer{}
+	branches, err := a.Analyze(file, "handler", 0, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(branches) != 8 {
+		t.Fatalf("expected 8 branches, got %d", len(branches))
+	}
+
+	expected := map[int]bool{
+		405: true, 406: true, 408: true, 410: true,
+		412: true, 413: true, 415: true, 422: true,
+	}
+	for _, b := range branches {
+		if !expected[b.Status] {
+			t.Fatalf("unexpected status %d", b.Status)
+		}
+	}
+}
+
+func TestNodeAnalyzer_HttpStatusEnum(t *testing.T) {
+	src := `async create(dto: CreateDto) {
+    return res.status(HttpStatus.CREATED).json(result);
+}
+
+async find(id: string) {
+    if (!item) {
+        throw new HttpException('not found', HttpStatus.NOT_FOUND);
+    }
+}
+`
+	dir := t.TempDir()
+	file := filepath.Join(dir, "controller.ts")
+	os.WriteFile(file, []byte(src), 0o644)
+
+	a := &NodeAnalyzer{}
+	branches, err := a.Analyze(file, "create", 0, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	statuses := map[int]bool{}
+	for _, b := range branches {
+		statuses[b.Status] = true
+	}
+	if !statuses[201] {
+		t.Fatal("expected 201 from HttpStatus.CREATED")
+	}
+	if !statuses[404] {
+		t.Fatal("expected 404 from HttpStatus.NOT_FOUND")
+	}
+}
+
+func TestNodeAnalyzer_ApiResponse(t *testing.T) {
+	src := `@ApiResponse({ status: 201, description: 'Created' })
+@ApiResponse({ status: 400, description: 'Bad Request' })
+async create(@Body() dto: CreateDto) {
+    return this.service.create(dto);
+}
+`
+	dir := t.TempDir()
+	file := filepath.Join(dir, "controller.ts")
+	os.WriteFile(file, []byte(src), 0o644)
+
+	a := &NodeAnalyzer{}
+	branches, err := a.Analyze(file, "create", 0, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(branches) != 2 {
+		t.Fatalf("expected 2 branches, got %d", len(branches))
+	}
+
+	statuses := map[int]bool{}
+	for _, b := range branches {
+		statuses[b.Status] = true
+	}
+	if !statuses[201] {
+		t.Fatal("expected 201")
+	}
+	if !statuses[400] {
+		t.Fatal("expected 400")
+	}
+}
+
+func TestNodeAnalyzer_ApiShorthand(t *testing.T) {
+	src := `@ApiOkResponse({ description: 'Success' })
+@ApiCreatedResponse({ description: 'Created' })
+@ApiNotFoundResponse({ description: 'Not Found' })
+async handler() {
+    return this.service.handle();
+}
+`
+	dir := t.TempDir()
+	file := filepath.Join(dir, "controller.ts")
+	os.WriteFile(file, []byte(src), 0o644)
+
+	a := &NodeAnalyzer{}
+	branches, err := a.Analyze(file, "handler", 0, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(branches) != 3 {
+		t.Fatalf("expected 3 branches, got %d", len(branches))
+	}
+
+	statuses := map[int]bool{}
+	for _, b := range branches {
+		statuses[b.Status] = true
+	}
+	if !statuses[200] {
+		t.Fatal("expected 200 from @ApiOkResponse")
+	}
+	if !statuses[201] {
+		t.Fatal("expected 201 from @ApiCreatedResponse")
+	}
+	if !statuses[404] {
+		t.Fatal("expected 404 from @ApiNotFoundResponse")
+	}
+}

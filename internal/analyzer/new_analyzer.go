@@ -9,7 +9,7 @@ func NewAnalyzer(lang string) Analyzer {
 		return &GoAnalyzer{}
 	case "python":
 		return &PythonAnalyzer{}
-	case "node", "javascript", "typescript":
+	case "node", "javascript", "typescript", "nestjs":
 		return &NodeAnalyzer{}
 	default:
 		return nil

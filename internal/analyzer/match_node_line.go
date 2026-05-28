@@ -5,7 +5,8 @@ package analyzer
 import "strconv"
 
 // matchNodeLine tries each Node.js regex pattern against a line, including
-// NestJS exception class mapping. Returns the matched HTTP status code, or 0.
+// NestJS exception class mapping, HttpStatus enum, and @ApiResponse decorators.
+// Returns the matched HTTP status code, or 0.
 func matchNodeLine(line string) int {
 	for _, pat := range nodePatterns {
 		m := pat.FindStringSubmatch(line)
@@ -19,13 +20,30 @@ func matchNodeLine(line string) int {
 		return code
 	}
 
-	m := nestExceptionPattern.FindStringSubmatch(line)
-	if m == nil {
-		return 0
+	if m := nestExceptionPattern.FindStringSubmatch(line); m != nil {
+		if code, ok := nestExceptionStatus[m[1]]; ok {
+			return code
+		}
 	}
-	code, ok := nestExceptionStatus[m[1]]
-	if !ok {
-		return 0
+
+	if m := httpStatusEnumPattern.FindStringSubmatch(line); m != nil {
+		if code, ok := httpStatusEnum[m[1]]; ok {
+			return code
+		}
 	}
-	return code
+
+	if m := apiResponsePattern.FindStringSubmatch(line); m != nil {
+		code, err := strconv.Atoi(m[1])
+		if err == nil {
+			return code
+		}
+	}
+
+	if m := apiShorthandPattern.FindStringSubmatch(line); m != nil {
+		if code, ok := apiShorthandStatus[m[1]]; ok {
+			return code
+		}
+	}
+
+	return 0
 }

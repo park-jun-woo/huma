@@ -23,7 +23,7 @@ func TestNewAnalyzer_Python(t *testing.T) {
 }
 
 func TestNewAnalyzer_Node(t *testing.T) {
-	for _, lang := range []string{"node", "javascript", "typescript"} {
+	for _, lang := range []string{"node", "javascript", "typescript", "nestjs"} {
 		a := NewAnalyzer(lang)
 		if a == nil {
 			t.Fatalf("expected NodeAnalyzer for %q, got nil", lang)
