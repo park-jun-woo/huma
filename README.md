@@ -4,7 +4,7 @@
   <img src="huma.webp" alt="huma" width="480" />
 </p>
 
-[![Version](https://img.shields.io/badge/version-v0.1.3-blue.svg)](https://github.com/park-jun-woo/huma/releases)
+[![Version](https://img.shields.io/badge/version-v0.1.4-blue.svg)](https://github.com/park-jun-woo/huma/releases)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![skills.sh](https://skills.sh/b/park-jun-woo/huma)](https://skills.sh/park-jun-woo/huma)
 

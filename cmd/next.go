@@ -90,7 +90,8 @@ var nextCmd = &cobra.Command{
 			total, pass, _ := sess.Stats()
 			fmt.Print(prompt.AllComplete(pass, total))
 		} else {
-			fmt.Print(prompt.TodoPrompt(next, cfg.HurlDir, cfg.URLVar()))
+			nextBranches := responseBranches(next, cfg.Scan.Lang)
+			fmt.Print(prompt.StaticTodoPrompt(next, cfg.HurlDir, cfg.URLVar(), nextBranches))
 		}
 
 		return nil

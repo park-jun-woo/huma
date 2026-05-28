@@ -1,13 +1,17 @@
 package cmd
 
 import (
+	"bytes"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/park-jun-woo/huma/internal/adapter"
 	"github.com/park-jun-woo/huma/internal/config"
+	"github.com/park-jun-woo/huma/internal/hurlcheck"
 	"github.com/park-jun-woo/huma/internal/runner"
 	"github.com/park-jun-woo/huma/internal/scanner"
 	"github.com/park-jun-woo/huma/internal/session"
@@ -420,6 +424,14 @@ func TestRunWithCoverage_ImproveSaveError(t *testing.T) {
 	}
 }
 
+// withCheckResponseCoverage replaces checkResponseCoverageFn for tests and restores it after.
+func withCheckResponseCoverage(t *testing.T, fn func(*scanner.Endpoint, string, string) *hurlcheck.ResponseCoverageResult) {
+	t.Helper()
+	orig := checkResponseCoverageFn
+	t.Cleanup(func() { checkResponseCoverageFn = orig })
+	checkResponseCoverageFn = fn
+}
+
 func TestRunWithCoverage_StalledThenNextTodo(t *testing.T) {
 	tmpDir := withSessionDir(t)
 	ma := &mockAdapter{}
@@ -443,5 +455,87 @@ func TestRunWithCoverage_StalledThenNextTodo(t *testing.T) {
 	next := sess.Current()
 	if next == nil || next.ID != "ep2" {
 		t.Fatal("expected ep2 as next")
+	}
+}
+
+// captureStdout captures os.Stdout during fn execution and returns the output.
+func captureStdout(t *testing.T, fn func()) string {
+	t.Helper()
+	origStdout := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("os.Pipe: %v", err)
+	}
+	os.Stdout = w
+
+	fn()
+
+	w.Close()
+	os.Stdout = origStdout
+
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+	r.Close()
+	return buf.String()
+}
+
+func TestStaticMode_PassThenNextTodoIncludesStaticPrompt(t *testing.T) {
+	tmpDir := withSessionDir(t)
+
+	// 1. Create manifest.yaml for static mode (no server.start)
+	manifestContent := `apiVersion: v1
+kind: manifest
+backend:
+  lang: go
+testing:
+  base_url: http://localhost:8080
+  hurl_dir: hurl
+`
+	os.WriteFile(filepath.Join(tmpDir, "manifest.yaml"), []byte(manifestContent), 0o644)
+
+	// 2. Create session with two endpoints
+	ep1 := scanner.Endpoint{ID: "ep1", Method: "GET", Path: "/alpha", Handler: "AlphaHandler", Source: "alpha.go", Line: 1}
+	ep2 := scanner.Endpoint{ID: "ep2", Method: "POST", Path: "/beta", Handler: "BetaHandler", Source: "beta.go", Line: 1}
+	sess := makeSession(ep1, ep2)
+	if err := sess.Save(); err != nil {
+		t.Fatalf("save session: %v", err)
+	}
+
+	// 3. Create hurl file for ep1 so it gets picked up by FindHurlFile
+	hurlDir := filepath.Join(tmpDir, "hurl")
+	os.MkdirAll(hurlDir, 0o755)
+	hurlFile := filepath.Join(hurlDir, "get_alpha.hurl")
+	os.WriteFile(hurlFile, []byte("GET http://localhost:8080/alpha\nHTTP 200\n"), 0o644)
+
+	// 4. Mock checkResponseCoverageFn to return nil (all covered → PASS)
+	withCheckResponseCoverage(t, func(ep *scanner.Endpoint, hurl string, lang string) *hurlcheck.ResponseCoverageResult {
+		return nil
+	})
+
+	// 5. Capture stdout and run the next command
+	output := captureStdout(t, func() {
+		err := nextCmd.RunE(nextCmd, nil)
+		if err != nil {
+			t.Errorf("nextCmd.RunE: %v", err)
+		}
+	})
+
+	// 6. Verify ep1 was marked PASS
+	sess2, err := session.Load()
+	if err != nil {
+		t.Fatalf("load session after run: %v", err)
+	}
+	for _, e := range sess2.Entries {
+		if e.ID == "ep1" && e.Status != session.StatusPass {
+			t.Fatalf("expected ep1 PASS, got %s", e.Status)
+		}
+	}
+
+	// 7. Verify output contains ep2 info (StaticTodoPrompt output)
+	if !strings.Contains(output, "POST /beta") {
+		t.Fatalf("expected output to contain ep2 info 'POST /beta', got:\n%s", output)
+	}
+	if !strings.Contains(output, "TODO") {
+		t.Fatalf("expected output to contain 'TODO', got:\n%s", output)
 	}
 }
