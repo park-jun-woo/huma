@@ -5,6 +5,7 @@ testdata/server/server
 # Local state
 .huma/
 .tsma/
+.whyso/
 
 # Local config
 .clari/
