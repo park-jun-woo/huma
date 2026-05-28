@@ -8,9 +8,11 @@ var denoPatterns = []*regexp.Regexp{
 	regexp.MustCompile(`new Response\(.*\{\s*status:\s*(\d+)`),
 	regexp.MustCompile(`Response\.json\(.*\{\s*status:\s*(\d+)`),
 	regexp.MustCompile(`Response\.redirect\([^,]+,\s*(\d+)`),
+	// status: 200 (standalone — catches spread headers and multi-line Response constructors)
+	regexp.MustCompile(`\bstatus:\s*(\d+)`),
 }
 
-var denoImplicitJson200 = regexp.MustCompile(`Response\.json\(`)
+var denoImplicitJson200 = regexp.MustCompile(`Response\.json\([^,]*\)`)
 
 var denoImplicitResponse200 = regexp.MustCompile(`new Response\([^,]*\)`)
 

@@ -244,3 +244,129 @@ func TestDenoAnalyzer_StatusJsonNoConflict(t *testing.T) {
 		t.Fatalf("expected 201, got %d", branches[0].Status)
 	}
 }
+
+func TestDenoAnalyzer_CorsHeadersSpread(t *testing.T) {
+	src := `Deno.serve(async (req) => {
+  return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
+})
+`
+	dir := t.TempDir()
+	file := filepath.Join(dir, "handler.ts")
+	os.WriteFile(file, []byte(src), 0o644)
+
+	a := &DenoAnalyzer{}
+	branches, err := a.Analyze(file, "handler", 0, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(branches) != 1 {
+		t.Fatalf("expected 1 branch, got %d", len(branches))
+	}
+	if branches[0].Status != 200 {
+		t.Fatalf("expected 200, got %d", branches[0].Status)
+	}
+}
+
+func TestDenoAnalyzer_MultiLineResponse(t *testing.T) {
+	src := `Deno.serve(async (req) => {
+  return new Response(body, {
+    status: 201,
+    headers: corsHeaders,
+  })
+})
+`
+	dir := t.TempDir()
+	file := filepath.Join(dir, "handler.ts")
+	os.WriteFile(file, []byte(src), 0o644)
+
+	a := &DenoAnalyzer{}
+	branches, err := a.Analyze(file, "handler", 0, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(branches) != 1 {
+		t.Fatalf("expected 1 branch, got %d", len(branches))
+	}
+	if branches[0].Status != 201 {
+		t.Fatalf("expected 201, got %d", branches[0].Status)
+	}
+}
+
+func TestDenoAnalyzer_MultiLineResponseJson(t *testing.T) {
+	src := `Deno.serve(async (req) => {
+  return Response.json(data, {
+    status: 201,
+  })
+})
+`
+	dir := t.TempDir()
+	file := filepath.Join(dir, "handler.ts")
+	os.WriteFile(file, []byte(src), 0o644)
+
+	a := &DenoAnalyzer{}
+	branches, err := a.Analyze(file, "handler", 0, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(branches) != 1 {
+		t.Fatalf("expected 1 branch, got %d: %+v", len(branches), branches)
+	}
+	if branches[0].Status != 201 {
+		t.Fatalf("expected 201, got %d", branches[0].Status)
+	}
+}
+
+func TestDenoAnalyzer_ImplicitJson200StillWorks(t *testing.T) {
+	src := `Deno.serve(async (req) => {
+  return Response.json({ users })
+})
+`
+	dir := t.TempDir()
+	file := filepath.Join(dir, "handler.ts")
+	os.WriteFile(file, []byte(src), 0o644)
+
+	a := &DenoAnalyzer{}
+	branches, err := a.Analyze(file, "handler", 0, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(branches) != 1 {
+		t.Fatalf("expected 1 branch, got %d", len(branches))
+	}
+	if branches[0].Status != 200 {
+		t.Fatalf("expected 200, got %d", branches[0].Status)
+	}
+}
+
+func TestDenoAnalyzer_SpreadMultipleStatuses(t *testing.T) {
+	src := `Deno.serve(async (req) => {
+  if (!body.email) {
+    return new Response(JSON.stringify({ error: 'email required' }), { headers: { ...corsHeaders }, status: 400 })
+  }
+  return new Response(JSON.stringify({ user }), { headers: { ...corsHeaders }, status: 201 })
+})
+`
+	dir := t.TempDir()
+	file := filepath.Join(dir, "handler.ts")
+	os.WriteFile(file, []byte(src), 0o644)
+
+	a := &DenoAnalyzer{}
+	branches, err := a.Analyze(file, "handler", 0, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(branches) != 2 {
+		t.Fatalf("expected 2 branches, got %d", len(branches))
+	}
+
+	statuses := map[int]bool{}
+	for _, b := range branches {
+		statuses[b.Status] = true
+	}
+	if !statuses[400] {
+		t.Fatal("expected 400")
+	}
+	if !statuses[201] {
+		t.Fatal("expected 201")
+	}
+}
