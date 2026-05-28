@@ -1,5 +1,5 @@
 //ff:func feature=analyzer type=parser control=iteration dimension=1
-//ff:what Analyzes Go source using AST to extract gin response status codes from handler functions
+//ff:what Analyzes Go source using AST to extract Gin, Fiber and Echo response status codes from handler functions
 package analyzer
 
 import (
@@ -37,6 +37,39 @@ func (g *GoAnalyzer) Analyze(file string, handlerName string, startLine, endLine
 
 	var branches []ResponseBranch
 	ast.Inspect(target.Body, func(n ast.Node) bool {
+		// fiber.ErrXxx / echo.ErrXxx constants in return statements
+		ret, retOK := n.(*ast.ReturnStmt)
+		if retOK {
+			for _, result := range ret.Results {
+				if sel, ok := result.(*ast.SelectorExpr); ok {
+					if ident, ok := sel.X.(*ast.Ident); ok {
+						switch ident.Name {
+						case "fiber":
+							if code, ok := fiberErrStatus[sel.Sel.Name]; ok {
+								pos := fset.Position(ret.Pos())
+								branches = append(branches, ResponseBranch{
+									Status: code,
+									File:   file,
+									Line:   pos.Line,
+									Code:   fmt.Sprintf("return fiber.%s", sel.Sel.Name),
+								})
+							}
+						case "echo":
+							if code, ok := echoErrStatus[sel.Sel.Name]; ok {
+								pos := fset.Position(ret.Pos())
+								branches = append(branches, ResponseBranch{
+									Status: code,
+									File:   file,
+									Line:   pos.Line,
+									Code:   fmt.Sprintf("return echo.%s", sel.Sel.Name),
+								})
+							}
+						}
+					}
+				}
+			}
+		}
+
 		call, ok := n.(*ast.CallExpr)
 		if !ok {
 			return true
@@ -51,8 +84,30 @@ func (g *GoAnalyzer) Analyze(file string, handlerName string, startLine, endLine
 		}
 
 		name := sel.Sel.Name
+
+		// fiber.NewError(400, "message") / echo.NewHTTPError(400, "message")
+		if ident, ok := sel.X.(*ast.Ident); ok {
+			if (ident.Name == "fiber" && name == "NewError") || (ident.Name == "echo" && name == "NewHTTPError") {
+				if len(call.Args) >= 1 {
+					status := extractStatus(call.Args[0])
+					if status > 0 {
+						pos := fset.Position(call.Pos())
+						line := strings.TrimSpace(nodeString(fset, call))
+						branches = append(branches, ResponseBranch{
+							Status: status,
+							File:   file,
+							Line:   pos.Line,
+							Code:   line,
+						})
+					}
+				}
+				return true
+			}
+		}
+
 		switch name {
-		case "JSON", "AbortWithStatusJSON", "Status", "AbortWithStatus":
+		case "JSON", "AbortWithStatusJSON", "Status", "AbortWithStatus", "SendStatus",
+			"NoContent", "String", "HTML", "XML", "JSONBlob", "Blob", "Redirect":
 			if len(call.Args) < 1 {
 				return true
 			}

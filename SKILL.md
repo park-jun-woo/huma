@@ -169,6 +169,8 @@ All errors carry a rule ID. See `rulebook.md` for the full catalog.
 | Node.js | `node` | NodeAdapter | regex |
 | NestJS | `nestjs` | NodeAdapter | regex |
 | Express | `express` | NodeAdapter | regex |
+| Fastify | `fastify` | NodeAdapter | regex |
+| Hono | `hono` | NodeAdapter | regex |
 | Supabase Edge Functions | `deno` | DenoAdapter | regex |
 
 ## Full Documentation

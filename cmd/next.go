@@ -107,12 +107,22 @@ var adapterRunFn = adapter.RunWithCoverage
 // newAdapterFn allows tests to replace adapter.NewGoAdapter.
 var newAdapterFn = func(cfg *config.Config) adapter.Adapter {
 	switch cfg.Scan.Lang {
-	case "python":
+	case "python", "flask", "django", "drf":
 		return adapter.NewPythonAdapter(cfg)
-	case "node", "javascript", "typescript", "nestjs", "express":
+	case "node", "javascript", "typescript", "nestjs", "express", "fastify", "hono":
 		return adapter.NewNodeAdapter(cfg)
 	case "deno", "edge-functions":
 		return adapter.NewDenoAdapter(cfg)
+	case "java", "spring", "quarkus":
+		return adapter.NewJavaAdapter(cfg)
+	case "dotnet", "aspnet", "csharp":
+		return adapter.NewDotnetAdapter(cfg)
+	case "php", "laravel":
+		return adapter.NewPhpAdapter(cfg)
+	case "rust", "actix":
+		return adapter.NewRustAdapter(cfg)
+	case "go", "fiber", "echo":
+		return adapter.NewGoAdapter(cfg)
 	default:
 		return adapter.NewGoAdapter(cfg)
 	}

@@ -18,5 +18,26 @@ func matchPythonLine(line string) int {
 		}
 		return code
 	}
+	if flaskRedirectImplicit.MatchString(line) {
+		return 302
+	}
+	// Django HttpResponseXxx classes
+	if m := djangoResponseClassPattern.FindStringSubmatch(line); m != nil {
+		if code, ok := djangoResponseClassStatus[m[1]]; ok {
+			return code
+		}
+	}
+	// Django exception raises
+	if m := djangoExceptionPattern.FindStringSubmatch(line); m != nil {
+		if code, ok := djangoExceptionStatus[m[1]]; ok {
+			return code
+		}
+	}
+	// DRF exception raises
+	if m := drfExceptionPattern.FindStringSubmatch(line); m != nil {
+		if code, ok := drfExceptionStatus[m[1]]; ok {
+			return code
+		}
+	}
 	return 0
 }

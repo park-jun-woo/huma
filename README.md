@@ -204,6 +204,8 @@ testing:
 | Node.js | NodeAdapter | regex | `node` |
 | NestJS | NodeAdapter | regex | `nestjs` |
 | Express | NodeAdapter | regex | `express` |
+| Fastify | NodeAdapter | regex | `fastify` |
+| Hono | NodeAdapter | regex | `hono` |
 | Supabase Edge Functions | DenoAdapter | regex | `deno` |
 
 ## Pipeline

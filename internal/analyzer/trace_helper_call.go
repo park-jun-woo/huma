@@ -1,5 +1,5 @@
 //ff:func feature=analyzer type=parser control=sequence
-//ff:what Traces 1-depth helper function calls to find gin response status codes via argument propagation
+//ff:what Traces 1-depth helper function calls to find Gin, Fiber and Echo response status codes via argument propagation
 package analyzer
 
 import (
@@ -27,7 +27,8 @@ func traceHelperCall(fset *token.FileSet, file string, funcMap map[string]*ast.F
 			return true
 		}
 		switch sel.Sel.Name {
-		case "JSON", "AbortWithStatusJSON", "Status", "AbortWithStatus":
+		case "JSON", "AbortWithStatusJSON", "Status", "AbortWithStatus", "SendStatus",
+			"NoContent", "String", "HTML", "XML", "JSONBlob", "Blob", "Redirect":
 			if len(innerCall.Args) < 1 {
 				return true
 			}
