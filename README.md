@@ -78,6 +78,8 @@ When `manifest.yaml` has no `testing.server` block, huma works without a running
 - Checks hurl files for status code coverage
 - Guides the agent to write hurl test scaffolds
 
+> **Static mode does not execute hurl.** It verifies that a `.hurl` file is *written* to cover the expected status codes — not that it *passes* when run. A scaffold with a wrong URL, bad assertion, or syntax error can still reach `PASS`. See [Scope](#scope-what-huma-guarantees) below.
+
 ```yaml
 apiVersion: yongol/v1
 kind: Project
@@ -194,6 +196,24 @@ testing:
 | **IMPROVE** | Hurl exists but missing response status codes. Agent gets specific missing codes. |
 | **PASS** | All expected responses covered. |
 | **DONE** | Coverage stalled after retry. Accepted at current level. |
+
+## Scope: what huma guarantees
+
+huma is a **coverage ratchet**, not a test runner you can trust blindly. Be clear about what each mode verifies:
+
+| | huma guarantees | huma does **not** guarantee |
+|---|---|---|
+| **Static mode** | A `.hurl` file exists and is written to cover every expected response status code | That the hurl test actually **passes** — the server is never contacted |
+| **Live mode** | The hurl test was executed and exited green against a running server, with runtime coverage measured | That your assertions are *meaningful* — a test can pass while asserting too little |
+
+**Always run a hurl smoke test yourself before trusting coverage.** A green `PASS` from huma means "covered," not "verified" — especially in static mode, where a scaffold with a wrong URL, broken assertion, or syntax error never gets executed.
+
+```bash
+# Smoke-test everything huma generated against a live server
+hurl --test --variable host=http://localhost:8080 hurl/*.hurl
+```
+
+If the smoke test fails, the `.hurl` files need fixing regardless of what huma reports. Treat huma's ratchet as "no endpoint left *unwritten*"; treat the smoke test as "no endpoint left *unverified*."
 
 ## Supported languages
 
