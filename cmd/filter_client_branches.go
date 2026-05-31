@@ -1,21 +1,14 @@
-//ff:func feature=ratchet type=helper control=iteration dimension=1
-//ff:what Removes server error branches (Status >= 500) that cannot be triggered by client input
+//ff:func feature=ratchet type=helper control=sequence
+//ff:what Returns only the client (gated) branches, wrapping splitClientBranches for callers that need the gate set
 package cmd
 
 import "github.com/park-jun-woo/huma/internal/analyzer"
 
-// filterClientBranches removes server error branches (Status >= 500)
-// that cannot be triggered by client input.
+// filterClientBranches returns only the client (gated) branches.
 func filterClientBranches(branches []analyzer.ResponseBranch) []analyzer.ResponseBranch {
 	if len(branches) == 0 {
 		return branches
 	}
-	n := 0
-	for _, b := range branches {
-		if b.Status < 500 {
-			branches[n] = b
-			n++
-		}
-	}
-	return branches[:n]
+	client, _ := splitClientBranches(branches)
+	return client
 }

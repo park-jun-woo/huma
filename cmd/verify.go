@@ -66,24 +66,16 @@ var verifyCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		// .hurl exists → check static response coverage
-		respResult := checkResponseCoverageFn(ep, hurl, cfg.Scan.Lang)
-		if respResult != nil && respResult.Total > 0 && len(respResult.Missing) > 0 {
-			sess.MarkImprove(ep.ID, respResult.Percent)
-			if err := sess.Save(); err != nil {
-				return err
-			}
-			fmt.Print(prompt.ResponseImprovePrompt(ep, hurl, respResult))
-			return nil
-		}
-
-		sess.MarkPass(ep.ID)
+		// .hurl exists → compute the static cheese-resistant verdict
+		oc, respResult := staticVerdict(cfg, sess, ep, hurl)
 		if err := sess.Save(); err != nil {
 			return err
 		}
+		if printStaticNonPass(oc, ep, hurl, respResult, cfg) {
+			return nil
+		}
 		fmt.Print(prompt.PassPrompt(ep))
 		fmt.Println()
-
 		return nil
 	},
 }
@@ -106,35 +98,16 @@ func verifyWithCoverage(cfg *config.Config, sess *session.Session, ep *scanner.E
 		return nil
 	}
 
-	// Hurl passed — check coverage
-	if covResult == nil || covResult.Percent == 100 || covResult.Total == 0 {
-		sess.MarkPass(ep.ID)
-		if err := sess.Save(); err != nil {
-			return err
-		}
-		fmt.Print(prompt.PassPrompt(ep))
-		fmt.Println()
-		return nil
-	}
-
-	// Coverage < 100%: check if improvement stalled
-	if entry.ImproveCount >= 1 && covResult.Percent <= entry.PrevCoverage {
-		sess.MarkDone(ep.ID, covResult.Percent)
-		if err := sess.Save(); err != nil {
-			return err
-		}
-		fmt.Print(prompt.PassPrompt(ep))
-		fmt.Println()
-		return nil
-	}
-
-	// Coverage improved or first attempt — mark improve
-	sess.MarkImprove(ep.ID, covResult.Percent)
+	// Hurl passed — compute the live cheese-resistant verdict.
+	oc := liveVerdict(cfg, sess, ep, hurl, covResult, entry)
 	if err := sess.Save(); err != nil {
 		return err
 	}
-	fmt.Print(prompt.ImprovePrompt(ep, hurl, covResult))
-
+	if printLiveNonPass(oc, ep, hurl, covResult, cfg) {
+		return nil
+	}
+	fmt.Print(prompt.PassPrompt(ep))
+	fmt.Println()
 	return nil
 }
 

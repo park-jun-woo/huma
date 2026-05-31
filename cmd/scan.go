@@ -16,6 +16,7 @@ import (
 )
 
 var fromFlag string
+var linkSourceFlag string
 
 var scanCmd = &cobra.Command{
 	Use:   "scan",
@@ -64,6 +65,11 @@ var scanCmd = &cobra.Command{
 			}
 		}
 
+		if linkSourceFlag != "" {
+			linked := scanner.LinkSource(endpoints, linkSourceFlag)
+			fmt.Printf("Linked %d/%d endpoints to source under %s\n", linked, len(endpoints), linkSourceFlag)
+		}
+
 		sess, err := session.Load()
 		if err != nil {
 			sess = session.New()
@@ -78,22 +84,25 @@ var scanCmd = &cobra.Command{
 			return fmt.Errorf("save session: %w", err)
 		}
 
-		var passCount, improveCount, todoCount int
+		var passCount, improveCount, todoCount, unverifiedCount int
 		for _, e := range sess.Entries {
 			switch e.Status {
 			case session.StatusPass, session.StatusDone:
 				passCount++
 			case session.StatusImprove:
 				improveCount++
+			case session.StatusUnverified:
+				unverifiedCount++
 			default:
 				todoCount++
 			}
 		}
 
 		fmt.Printf("Scanned %d endpoints\n", len(endpoints))
-		fmt.Printf("  PASS:    %d (existing hurl, all responses covered)\n", passCount)
-		fmt.Printf("  IMPROVE: %d (existing hurl, missing responses)\n", improveCount)
-		fmt.Printf("  TODO:    %d (no hurl file)\n", todoCount)
+		fmt.Printf("  PASS:       %d (existing hurl, all responses covered)\n", passCount)
+		fmt.Printf("  IMPROVE:    %d (existing hurl, missing responses)\n", improveCount)
+		fmt.Printf("  UNVERIFIED: %d (no oracle: source unlinked / not yet executed)\n", unverifiedCount)
+		fmt.Printf("  TODO:       %d (no hurl file)\n", todoCount)
 
 		warnMismatchedHurlFiles(hurlDir, endpoints)
 
@@ -103,5 +112,6 @@ var scanCmd = &cobra.Command{
 
 func init() {
 	scanCmd.Flags().StringVar(&fromFlag, "from", "", "path to endpoints JSON file, or - for stdin")
+	scanCmd.Flags().StringVar(&linkSourceFlag, "link-source", "", "root directory to map OpenAPI handlers to source file:line")
 	rootCmd.AddCommand(scanCmd)
 }

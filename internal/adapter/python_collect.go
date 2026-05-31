@@ -54,9 +54,10 @@ func (a *PythonAdapter) Collect(handlerFile string, startLine, endLine int) (*Co
 	}
 
 	return &CoverageResult{
-		Covered:   coveredCount,
-		Total:     totalCount,
-		Percent:   pct,
-		Uncovered: uncovered,
+		Covered:      coveredCount,
+		Total:        totalCount,
+		Percent:      pct,
+		Uncovered:    uncovered,
+		CoveredLines: covered,
 	}, nil
 }

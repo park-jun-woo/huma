@@ -65,7 +65,8 @@ huma status   # check progress
 | `huma scan --from <file>` | Scan from OpenAPI, JSON array, or YAML |
 | `huma next` | Show next TODO, or verify current and advance |
 | `huma verify` | Run hurl test and advance if passing |
-| `huma status` | Show progress (TODO/PASS/IMPROVE/DONE) |
+| `huma status` | Show progress (TODO/PASS/IMPROVE/DONE/UNVERIFIED) with per-endpoint CRI tier |
+| `huma scan --link-source <root>` | Map OpenAPI handlers to source `file:line` (enables source-branch oracle) |
 | `huma prompt` | Output agent prompt for current TODO (no side effects) |
 
 ## Two modes
@@ -194,8 +195,22 @@ testing:
 |-------|---------|
 | **TODO** | No .hurl file. Agent gets handler source + expected responses + hurl example. |
 | **IMPROVE** | Hurl exists but missing response status codes. Agent gets specific missing codes. |
-| **PASS** | All expected responses covered. |
-| **DONE** | Coverage stalled after retry. Accepted at current level. |
+| **UNVERIFIED** | No independent oracle: source is unlinked **and** the server is uninstrumented (no runtime evidence). Measurement failed, so this is **not** a pass. Fix with `--link-source` or `testing.server`. |
+| **PASS** | All expected client branches covered, at or above the required evidence tier (CRI). |
+| **DONE** | Coverage stalled after retry, **and** every uncovered branch has a verifiable reason in `.huma/unreachable.yaml`. Accepted at current level. |
+
+### Evidence tiers (CRI)
+
+A `PASS` is not a single state — it carries a **cheese-resistance index** (CRI 0–3) so a weak verdict cannot masquerade as a strong one. `huma status` prints the tier for every endpoint.
+
+| Label | CRI | Meaning |
+|-------|-----|---------|
+| **UNVERIFIED** | 0 | No oracle / no execution / no denominator. Never a pass. |
+| **SCAFFOLDED** | 1 | Hurl written, not executed (static mode honest ceiling). |
+| **SMOKE** | 2 | Server executed green; no branch-line binding (uninstrumented). |
+| **COVERED** | 3 | Source ∪ runtime: every client branch is runtime-bound and asserted. |
+
+The minimum tier required for `PASS` is set by `testing.require_cri` in `manifest.yaml`. If unset, huma auto-requires the maximum tier reachable in the current mode.
 
 ## Scope: what huma guarantees
 
@@ -214,6 +229,14 @@ hurl --test --variable host=http://localhost:8080 hurl/*.hurl
 ```
 
 If the smoke test fails, the `.hurl` files need fixing regardless of what huma reports. Treat huma's ratchet as "no endpoint left *unwritten*"; treat the smoke test as "no endpoint left *unverified*."
+
+### Residual gaps even at COVERED (CRI 3)
+
+`COVERED` means "every client branch is runtime-bound and asserted," **not** "semantically correct." These gaps are out of scope by design:
+
+- **R-1 Semantic correctness** — A response whose shape matches but whose *values* are wrong (schema passes, business meaning violated). huma does not interpret meaning; this is the job of SSOT/domain assertions (e.g. yongol).
+- **R-2 Analyzer false-negatives** — regex-based language analyzers (node/python/php/java/rust/deno) can miss branches (dynamic routing, etc.), so the denominator may be incomplete. The Go AST analyzer is the most complete; for regex languages treat the branch list as a floor, not a ceiling.
+- **R-3 Oracle corruption** — A miswired instrumented server that always returns 200 makes the execution evidence (E axis) lie. A ready-check alone cannot detect this; pair it with a deliberate-error sanity probe.
 
 ## Supported languages
 

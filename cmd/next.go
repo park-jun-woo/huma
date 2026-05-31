@@ -61,27 +61,21 @@ var nextCmd = &cobra.Command{
 
 		// STATIC MODE: no server, static analysis only
 		if hurl == "" {
-			branches := responseBranches(ep, cfg.Scan.Lang)
+			branches, _ := responseBranches(ep, cfg.Scan.Lang)
 			fmt.Print(prompt.StaticTodoPrompt(ep, cfg.HurlDir, cfg.URLVar(), branches))
 			return nil
 		}
 
-		// .hurl exists → check static response coverage
-		respResult := checkResponseCoverageFn(ep, hurl, cfg.Scan.Lang)
-		if respResult != nil && respResult.Total > 0 && len(respResult.Missing) > 0 {
-			sess.MarkImprove(ep.ID, respResult.Percent)
-			if err := sess.Save(); err != nil {
-				return err
-			}
-			fmt.Print(prompt.ResponseImprovePrompt(ep, hurl, respResult))
-			return nil
-		}
-
-		// All status codes covered → PASS
-		sess.MarkPass(ep.ID)
+		// .hurl exists → compute the static cheese-resistant verdict
+		oc, respResult := staticVerdict(cfg, sess, ep, hurl)
 		if err := sess.Save(); err != nil {
 			return err
 		}
+		if printStaticNonPass(oc, ep, hurl, respResult, cfg) {
+			return nil
+		}
+
+		// PASS → advance to next item
 		fmt.Print(prompt.PassPrompt(ep))
 		fmt.Println()
 
@@ -90,7 +84,7 @@ var nextCmd = &cobra.Command{
 			total, pass, _ := sess.Stats()
 			fmt.Print(prompt.AllComplete(pass, total))
 		} else {
-			nextBranches := responseBranches(next, cfg.Scan.Lang)
+			nextBranches, _ := responseBranches(next, cfg.Scan.Lang)
 			fmt.Print(prompt.StaticTodoPrompt(next, cfg.HurlDir, cfg.URLVar(), nextBranches))
 		}
 
@@ -146,52 +140,26 @@ func runWithCoverage(cfg *config.Config, sess *session.Session, ep *scanner.Endp
 		return nil
 	}
 
-	// Hurl passed — check coverage
-	if covResult == nil || covResult.Percent == 100 || covResult.Total == 0 {
-		sess.MarkPass(ep.ID)
-		if err := sess.Save(); err != nil {
-			return err
-		}
-		fmt.Print(prompt.PassPrompt(ep))
-		fmt.Println()
-
-		next := sess.Current()
-		if next == nil {
-			total, pass, _ := sess.Stats()
-			fmt.Print(prompt.AllComplete(pass, total))
-		} else {
-			fmt.Print(prompt.TodoPrompt(next, cfg.HurlDir, cfg.URLVar()))
-		}
-		return nil
-	}
-
-	// Coverage < 100%: check if improvement stalled
-	if entry.ImproveCount >= 1 && covResult.Percent <= entry.PrevCoverage {
-		// No improvement after retry — mark done
-		sess.MarkDone(ep.ID, covResult.Percent)
-		if err := sess.Save(); err != nil {
-			return err
-		}
-		fmt.Print(prompt.PassPrompt(ep))
-		fmt.Println()
-
-		next := sess.Current()
-		if next == nil {
-			total, pass, _ := sess.Stats()
-			fmt.Print(prompt.AllComplete(pass, total))
-		} else {
-			fmt.Print(prompt.TodoPrompt(next, cfg.HurlDir, cfg.URLVar()))
-		}
-		return nil
-	}
-
-	// Coverage improved or first attempt — mark improve
-	sess.MarkImprove(ep.ID, covResult.Percent)
+	// Hurl passed — compute the live cheese-resistant verdict.
+	oc := liveVerdict(cfg, sess, ep, hurl, covResult, entry)
 	if err := sess.Save(); err != nil {
 		return err
 	}
-	fmt.Print(prompt.ImprovePrompt(ep, hurl, covResult))
+	if printLiveNonPass(oc, ep, hurl, covResult, cfg) {
+		return nil
+	}
 
+	// PASS or DONE → advance to next item
+	fmt.Print(prompt.PassPrompt(ep))
+	fmt.Println()
+
+	next := sess.Current()
+	if next == nil {
+		total, pass, _ := sess.Stats()
+		fmt.Print(prompt.AllComplete(pass, total))
+	} else {
+		fmt.Print(prompt.TodoPrompt(next, cfg.HurlDir, cfg.URLVar()))
+	}
 	return nil
 }
 

@@ -12,15 +12,18 @@ var checkResponseCoverageFn = checkResponseCoverage
 
 // checkResponseCoverage performs static response analysis on the endpoint.
 func checkResponseCoverage(ep *scanner.Endpoint, hurlFile string, lang string) *hurlcheck.ResponseCoverageResult {
-	branches := responseBranches(ep, lang)
+	branches, _ := responseBranches(ep, lang)
 	if len(branches) == 0 {
 		return nil
 	}
 
-	statuses, err := hurlcheck.ParseHurlStatuses(hurlFile)
+	entries, err := hurlcheck.ParseHurlEntries(hurlFile)
 	if err != nil {
 		return nil
 	}
 
+	// Only non-vacuous entries (real status assertion, not skipped) count
+	// toward coverage — blocks vacuous green (§3.5, CV-10).
+	statuses := hurlcheck.NonVacuousStatusList(entries)
 	return hurlcheck.CheckResponseCoverage(branches, statuses)
 }

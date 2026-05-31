@@ -56,10 +56,11 @@ func (a *JavaAdapter) Collect(handlerFile string, startLine, endLine int) (*Cove
 	}
 
 	return &CoverageResult{
-		Covered:   coveredCount,
-		Total:     totalCount,
-		Percent:   pct,
-		Uncovered: uncovered,
+		Covered:      coveredCount,
+		Total:        totalCount,
+		Percent:      pct,
+		Uncovered:    uncovered,
+		CoveredLines: covered,
 	}, nil
 }
 

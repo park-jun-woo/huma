@@ -6,7 +6,7 @@ package session
 // item that needs work (TODO or IMPROVE). Returns nil if all are done.
 func (s *Session) CurrentEntry() *Entry {
 	for i := range s.Entries {
-		if s.Entries[i].Status == StatusTodo || s.Entries[i].Status == StatusImprove {
+		if needsWork(s.Entries[i].Status) {
 			return &s.Entries[i]
 		}
 	}

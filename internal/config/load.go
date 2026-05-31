@@ -32,8 +32,9 @@ func Load() (*Config, error) {
 		Scan: ScanConfig{
 			Lang: m.Backend.Lang,
 		},
-		Server: m.Testing.Server,
-		Deps:   m.Testing.Deps,
+		Server:     m.Testing.Server,
+		Deps:       m.Testing.Deps,
+		RequireCRI: m.Testing.RequireCRI,
 	}
 
 	if cfg.BaseURL == "" {

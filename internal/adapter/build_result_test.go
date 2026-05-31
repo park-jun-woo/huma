@@ -29,6 +29,27 @@ func TestBuildResult_FullCoverage(t *testing.T) {
 	}
 }
 
+func TestBuildResult_PreservesCoveredLines(t *testing.T) {
+	tmpDir := t.TempDir()
+	f := filepath.Join(tmpDir, "handler.go")
+	os.WriteFile(f, []byte("l1\nl2\nl3\nl4\n"), 0o644)
+
+	blocks := []coverage.Block{
+		{File: f, StartLine: 1, EndLine: 2, Count: 1},
+		{File: f, StartLine: 3, EndLine: 4, Count: 0},
+	}
+	result, err := buildResult(blocks, f, 1, 4)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.IsLineCovered(1) || !result.IsLineCovered(2) {
+		t.Fatal("expected lines 1,2 in covered set")
+	}
+	if result.IsLineCovered(3) {
+		t.Fatal("expected line 3 not covered")
+	}
+}
+
 func TestBuildResult_PartialCoverage(t *testing.T) {
 	tmpDir := t.TempDir()
 	f := filepath.Join(tmpDir, "handler.go")

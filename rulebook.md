@@ -11,6 +11,7 @@ All validation rules emitted by huma. Each rule has a unique ID, level, and desc
 | `H-` | hurl file validation |
 | `S-` | session state validation |
 | `A-` | adapter/server validation |
+| `C-` | coverage verdict (cheese-resistant gate) |
 
 ## Levels
 
@@ -76,6 +77,20 @@ All validation rules emitted by huma. Each rule has a unique ID, level, and desc
 | A-04 | ERROR | Server ready timeout |
 | A-05 | ERROR | Coverage data collection failed |
 | A-06 | WARNING | deps.ready check failed |
+
+## C. Coverage Verdict
+
+The cheese-resistant gate (Phase 045). Verdicts carry a cheese-resistance index
+(CRI 0–3); `require_cri` sets the minimum tier for PASS. Rule-to-rule defeat
+(e.g. an `unreachable.yaml` reason satisfying C-04) is handled in verify/next
+program logic, not as a separate rule — huma has no defeats graph.
+
+| Rule ID | Level | Description |
+|---------|-------|-------------|
+| C-01 | ERROR | No-signal verdict cannot PASS — downgraded to UNVERIFIED (invariant) |
+| C-02 | ERROR | Denominator is monotonic — input spec cannot shrink ground-truth branches |
+| C-03 | WARNING | Assertion depth (A) below the required level — IMPROVE |
+| C-04 | WARNING | DONE requires an `unreachable.yaml` reason artifact for uncovered branches |
 
 ## Output Format
 

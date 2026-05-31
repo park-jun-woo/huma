@@ -9,4 +9,7 @@ type Config struct {
 	Scan          ScanConfig        `yaml:"scan"`
 	Server        ServerConfig      `yaml:"server"`
 	Deps          DepsConfig        `yaml:"deps"`
+	// RequireCRI is the explicit minimum cheese-resistance index gate.
+	// nil means unset (auto-require mode maximum).
+	RequireCRI *int `yaml:"require_cri"`
 }

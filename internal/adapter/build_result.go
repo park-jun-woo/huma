@@ -22,9 +22,10 @@ func buildResult(filtered []coverage.Block, handlerFile string, startLine, endLi
 	}
 
 	return &CoverageResult{
-		Covered:   coveredCount,
-		Total:     totalCount,
-		Percent:   pct,
-		Uncovered: uncoveredLines,
+		Covered:      coveredCount,
+		Total:        totalCount,
+		Percent:      pct,
+		Uncovered:    uncoveredLines,
+		CoveredLines: covered,
 	}, nil
 }

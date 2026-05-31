@@ -493,24 +493,32 @@ testing:
 `
 	os.WriteFile(filepath.Join(tmpDir, "manifest.yaml"), []byte(manifestContent), 0o644)
 
-	// 2. Create session with two endpoints
-	ep1 := scanner.Endpoint{ID: "ep1", Method: "GET", Path: "/alpha", Handler: "AlphaHandler", Source: "alpha.go", Line: 1}
+	// 2. Create a real analyzable source so ep1 has an oracle (source link)
+	//    and a non-empty branch denominator — required to reach SCAFFOLDED.
+	alphaSrc := filepath.Join(tmpDir, "alpha.go")
+	os.WriteFile(alphaSrc, []byte(`package main
+
+import "net/http"
+
+func AlphaHandler(c interface{}) {
+	c.JSON(http.StatusOK, nil)
+}
+`), 0o644)
+
+	// 3. Create session with two endpoints
+	ep1 := scanner.Endpoint{ID: "ep1", Method: "GET", Path: "/alpha", Handler: "AlphaHandler", Source: alphaSrc, Line: 5}
 	ep2 := scanner.Endpoint{ID: "ep2", Method: "POST", Path: "/beta", Handler: "BetaHandler", Source: "beta.go", Line: 1}
 	sess := makeSession(ep1, ep2)
 	if err := sess.Save(); err != nil {
 		t.Fatalf("save session: %v", err)
 	}
 
-	// 3. Create hurl file for ep1 so it gets picked up by FindHurlFile
+	// 4. Create hurl file for ep1 so it gets picked up by FindHurlFile,
+	//    covering the 200 branch (non-vacuous status assertion).
 	hurlDir := filepath.Join(tmpDir, "hurl")
 	os.MkdirAll(hurlDir, 0o755)
 	hurlFile := filepath.Join(hurlDir, "get_alpha.hurl")
 	os.WriteFile(hurlFile, []byte("GET http://localhost:8080/alpha\nHTTP 200\n"), 0o644)
-
-	// 4. Mock checkResponseCoverageFn to return nil (all covered → PASS)
-	withCheckResponseCoverage(t, func(ep *scanner.Endpoint, hurl string, lang string) *hurlcheck.ResponseCoverageResult {
-		return nil
-	})
 
 	// 5. Capture stdout and run the next command
 	output := captureStdout(t, func() {

@@ -72,3 +72,10 @@ func TestAdapterRules_Count(t *testing.T) {
 		t.Errorf("got %d adapter rules, want 6", len(rules))
 	}
 }
+
+func TestCoverageRules_Count(t *testing.T) {
+	rules := CoverageRules()
+	if len(rules) != 4 {
+		t.Errorf("got %d coverage rules, want 4", len(rules))
+	}
+}

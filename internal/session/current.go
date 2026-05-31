@@ -1,5 +1,5 @@
 //ff:func feature=session type=engine control=iteration dimension=1
-//ff:what Returns the endpoint of the first entry needing work (TODO or IMPROVE)
+//ff:what Returns the endpoint of the first entry needing work (TODO, IMPROVE, or UNVERIFIED)
 package session
 
 import (
@@ -8,7 +8,7 @@ import (
 
 func (s *Session) Current() *scanner.Endpoint {
 	for i := range s.Entries {
-		if s.Entries[i].Status == StatusTodo || s.Entries[i].Status == StatusImprove {
+		if needsWork(s.Entries[i].Status) {
 			ep := s.Entries[i].Endpoint
 			return &ep
 		}

@@ -29,9 +29,17 @@ var statusCmd = &cobra.Command{
 		}
 
 		total, done, todo := sess.Stats()
+		unverified := sess.Unverified()
 		fmt.Printf("%d endpoints\n", total)
-		fmt.Printf("DONE: %3d (%5.1f%%)\n", done, pct(done, total))
-		fmt.Printf("TODO: %3d (%5.1f%%)\n", todo, pct(todo, total))
+		fmt.Printf("DONE:       %3d (%5.1f%%)\n", done, pct(done, total))
+		fmt.Printf("UNVERIFIED: %3d (%5.1f%%)\n", unverified, pct(unverified, total))
+		fmt.Printf("TODO:       %3d (%5.1f%%)\n", todo, pct(todo, total))
+
+		// Per-endpoint transparency: CRI label + denominator provenance (§5).
+		fmt.Println()
+		for _, e := range sess.Entries {
+			fmt.Println(statusLine(e))
+		}
 		return nil
 	},
 }
