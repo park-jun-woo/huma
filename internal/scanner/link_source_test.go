@@ -19,9 +19,9 @@ func GetUser(c interface{}) {}
 		{ID: "2", Method: "GET", Path: "/missing", Handler: "NoSuchHandler"},
 		{ID: "3", Method: "GET", Path: "/already", Handler: "X", Source: "x.go", Line: 1},
 	}
-	linked := LinkSource(eps, root)
-	if linked != 1 {
-		t.Fatalf("expected 1 linked, got %d", linked)
+	res := LinkSource(eps, root, "go")
+	if res.Linked != 1 {
+		t.Fatalf("expected 1 linked, got %d", res.Linked)
 	}
 	if eps[0].Source == "" || eps[0].Line == 0 {
 		t.Fatalf("expected CreateUser linked, got %+v", eps[0])

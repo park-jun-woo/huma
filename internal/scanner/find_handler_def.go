@@ -1,17 +1,22 @@
 //ff:func feature=scan type=engine control=iteration dimension=1
-//ff:what Finds the file and line of a handler definition by name across candidate source files
+//ff:what Scans all candidate files for a handler definition, returning every matching file:line
 package scanner
 
-import "regexp"
-
-// findHandlerDef scans candidate files for a definition of handlerName and
-// returns the first matching file and 1-based line number.
-func findHandlerDef(files []string, handlerName string) (string, int) {
-	defRe := regexp.MustCompile(`\b` + regexp.QuoteMeta(handlerName) + `\s*(\(|=|:)`)
+// findHandlerDef scans EVERY candidate file (no early return) for a definition
+// whose normalized name matches handlerName, returning all matches. The caller
+// links only when exactly one file matches and rejects ambiguous (multi-file)
+// matches per §2.5, replacing the old first-match-wins behavior that produced
+// BUG-002's arbitrary alphabetical pick.
+func findHandlerDef(files []string, handlerName string) []handlerMatch {
+	target := normalizeSymbol(handlerName)
+	if target == "" {
+		return nil
+	}
+	var matches []handlerMatch
 	for _, f := range files {
-		if line := scanForPattern(f, defRe); line > 0 {
-			return f, line
+		if line := scanForHandler(f, target); line > 0 {
+			matches = append(matches, handlerMatch{File: f, Line: line})
 		}
 	}
-	return "", 0
+	return matches
 }

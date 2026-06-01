@@ -1,5 +1,5 @@
 //ff:func feature=scan type=reader control=sequence
-//ff:what Walks a root directory collecting source files with recognized code extensions
+//ff:what Walks a root directory collecting source files limited to the backend language extensions
 package scanner
 
 import (
@@ -8,20 +8,17 @@ import (
 	"strings"
 )
 
-// sourceExts is the set of source file extensions link-source will scan.
-var sourceExts = map[string]bool{
-	".go": true, ".py": true, ".js": true, ".ts": true,
-	".java": true, ".cs": true, ".php": true, ".rs": true,
-}
-
-// collectSourceFiles walks root and returns paths of recognized source files.
-func collectSourceFiles(root string) []string {
+// collectSourceFiles walks root and returns paths of source files whose
+// extension is allowed for lang. Unknown/empty lang falls back to all
+// recognized source extensions (no regression for manifest-less repos).
+func collectSourceFiles(root, lang string) []string {
+	exts, _ := allowedExts(lang)
 	var files []string
 	_ = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil || info.IsDir() {
 			return nil
 		}
-		if sourceExts[strings.ToLower(filepath.Ext(path))] {
+		if exts[strings.ToLower(filepath.Ext(path))] {
 			files = append(files, path)
 		}
 		return nil

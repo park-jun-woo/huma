@@ -66,8 +66,12 @@ var scanCmd = &cobra.Command{
 		}
 
 		if linkSourceFlag != "" {
-			linked := scanner.LinkSource(endpoints, linkSourceFlag)
-			fmt.Printf("Linked %d/%d endpoints to source under %s\n", linked, len(endpoints), linkSourceFlag)
+			lang := ""
+			if cfg != nil {
+				lang = cfg.Scan.Lang
+			}
+			result := scanner.LinkSource(endpoints, linkSourceFlag, lang)
+			printLinkResult(result, len(endpoints), linkSourceFlag)
 		}
 
 		sess, err := session.Load()

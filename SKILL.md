@@ -3,7 +3,7 @@ name: huma
 description: Ratchet tool for wall-to-wall Hurl API test generation. Use when writing Hurl tests for SaaS backends, when an endpoint lacks test coverage, or when asked to generate API integration tests. Triggers on keywords: hurl, endpoint test, API test, ratchet, coverage.
 metadata:
   author: park-jun-woo
-  version: "0.2.0"
+  version: "0.2.1"
 ---
 
 # huma — Ratchet-driven Hurl test generator for SaaS APIs
