@@ -3,7 +3,7 @@ name: huma
 description: "Ratchet tool for wall-to-wall Hurl API test generation. Use when writing Hurl tests for SaaS backends, when an endpoint lacks test coverage, or when asked to generate API integration tests. Triggers on keywords: hurl, endpoint test, API test, ratchet, coverage."
 metadata:
   author: park-jun-woo
-  version: "0.2.1"
+  version: "0.3.0"
 ---
 
 # huma — Ratchet-driven Hurl test generator for SaaS APIs
@@ -27,31 +27,35 @@ metadata:
 go install github.com/park-jun-woo/huma@latest
 ```
 
-Requires **Go 1.22+**. No cgo dependency — pure Go.
+Requires **Go 1.22+**. No cgo dependency — pure Go. Built on the [reins](https://github.com/park-jun-woo/reins) quest framework — only the deterministic gate locks `PASS`.
 
 ## Commands
 
 | Command | Purpose |
 |---------|---------|
-| `huma scan` | Auto-detect `openapi.yaml` and scan endpoints |
-| `huma scan --from <file>` | Scan from OpenAPI, JSON array, or YAML |
-| `huma next` | Show next TODO, or verify current and advance |
-| `huma verify` | Run hurl test and advance if passing |
-| `huma status` | Show progress (TODO/PASS/IMPROVE/DONE/UNVERIFIED) with per-endpoint CRI tier |
-| `huma scan --link-source <root>` | Map OpenAPI handlers to source `file:line` (enables the source-branch oracle) |
-| `huma prompt` | Output agent prompt for current TODO (no side effects) |
+| `huma scan [openapi] [src-root]` | Seed endpoints. Arg 1 = OpenAPI/JSON/YAML (auto-detects `openapi.yaml` if omitted); arg 2 = source root linking handlers to `file:line` (source-branch oracle) |
+| `huma next` | Show the next TODO + authoring prompt (**read-only** — does not advance) |
+| `huma submit --key <id> [--in <hurl>\|-]` | Evaluate one endpoint's `.hurl` through the CRI gate (static). `--in` is the hurl path; omit for the conventional path |
+| `huma cover` | **Live mode**: bring the server up once, run each endpoint's hurl, measure runtime coverage, gate each |
+| `huma cover --generate [--model <b:m>] [--max-items N]` | **Unattended loop**: LLM generates `.hurl`, server measures, CRI gate converges |
+| `huma status` | Progress (TODO/PASS/IMPROVE/UNVERIFIED/DONE/SKIPPED) with per-endpoint CRI tier |
+| `huma rules` | Print the gate's rule catalog (M/E/H/S/A/C) |
+| `huma export` | Emit terminal results as JSONL (emit-once) |
 
 ## Workflow
 
 ```
 1. Create manifest.yaml      — project config + testing block
-2. huma scan --from openapi.yaml   (or just `huma scan` to auto-detect)
-3. Loop:
-   a. huma next             — read the TODO prompt (includes expected responses)
+2. huma scan openapi.yaml .  — seed endpoints (arg 2 = source root, optional but enables the oracle)
+3. Manual loop:
+   a. huma next                — read the TODO prompt (read-only; handler source + responses + hurl example)
    b. Write the .hurl file at the path shown
-   c. huma next             — verify and advance to next endpoint
+   c. huma submit --key <id>   — evaluate through the CRI gate → PASS / IMPROVE / UNVERIFIED
    d. Repeat until "All complete"
+   OR unattended (live): huma cover --generate --model claude:sonnet
 ```
+
+> **`next` is read-only.** Unlike older versions, `huma next` only *shows* the prompt — use `huma submit` to evaluate, or `huma cover` to run the live loop over all endpoints.
 
 ### Step 1: manifest.yaml
 
@@ -77,35 +81,28 @@ With `testing.server` → **live mode** (server running, hurl execution + runtim
 ### Step 2: Scan
 
 ```bash
-huma scan --from openapi.yaml
-# Scanned 65 endpoints
-#   PASS:    47 (existing hurl, all responses covered)
-#   IMPROVE:  8 (existing hurl, missing responses)
-#   TODO:    10 (no hurl file)
+huma scan openapi.yaml .       # arg 2 = source root (optional; enables the source-branch oracle)
+# seeded 65 item(s); 65 total
 ```
 
-huma accepts OpenAPI yaml (auto-detected by `openapi:` key), JSON arrays, or YAML endpoint lists.
-Existing hurl files are pre-checked during scan — no need to run `huma next` for already-complete endpoints.
+huma accepts OpenAPI yaml (auto-detected by the `openapi:` key), JSON arrays, or YAML endpoint lists.
+Each endpoint becomes a `quest.Item` in `session.json`. Run `huma status` for the tally.
 
 ### Step 3: Ratchet loop
 
 ```bash
 huma next
-# TODO  POST /api/v1/auth/login
-# Handler: Login
-#
-# ## Expected responses (from OpenAPI)
-#   200 — OK
-#   400 — Bad Request
-#   401 — Unauthorized
-#
-# ## Instructions
-# 1. Write hurl/post_api_v1_auth_login.hurl
-# 2. Include test entries for status 200, 400, 401
-# 3. Run `huma next`
+# # TODO  POST /api/v1/auth/login
+# # Source: internal/api/auth/handler.go:412
+# # Handler: Login
+# ...hurl example + response fields...
+
+#  ...write hurl/post_api_v1_auth_login.hurl...
+
+huma submit --key <id>         # evaluate → PASS / IMPROVE / UNVERIFIED
 ```
 
-Write the .hurl file, then run `huma next` again. On pass it advances to the next endpoint.
+`huma next` is read-only (shows the prompt only). After writing the `.hurl`, run `huma submit --key <id>` to evaluate it; on PASS the ratchet locks it. For full live verification across all endpoints, use `huma cover` (or `huma cover --generate` to let an LLM author and converge them unattended).
 
 ## Key Concepts
 
@@ -116,7 +113,7 @@ Write the .hurl file, then run `huma next` again. On pass it advances to the nex
 | **TODO** | No .hurl file yet |
 | **PASS** | All expected client branches covered, at or above the required evidence tier (CRI) |
 | **IMPROVE** | Hurl passes but coverage < 100%; uncovered lines/branches shown |
-| **UNVERIFIED** | No independent oracle — source unlinked **and** server uninstrumented. Measurement failed, so **not** a pass. Fix with `huma scan --link-source <root>` or add `testing.server` |
+| **UNVERIFIED** | No independent oracle — source unlinked **and** server uninstrumented. Measurement failed, so **not** a pass. Fix by passing a source root to `huma scan` or adding `testing.server` |
 | **DONE** | Coverage stalled after retry **and** every uncovered branch has a verifiable reason in `.huma/unreachable.yaml`; accepted at current level |
 
 ### Evidence tiers (CRI)
@@ -145,17 +142,18 @@ Without `testing.server`, huma uses OpenAPI responses and/or source code static 
 - Check hurl files for status code coverage without running them
 - Mark PASS (tier SCAFFOLDED) when all expected codes are covered in hurl assertions
 
-**Static mode does not execute hurl** — it verifies the file is *written* to cover the codes, not that it *passes*. If there is no source link and no server, there is no independent oracle, so the verdict is **UNVERIFIED**, not PASS. Provide a source link (`huma scan --link-source <root>`) so the denominator comes from real handler branches (ground truth) — OpenAPI declarations can only *add* branches, never shrink them.
+**Static mode does not execute hurl** — it verifies the file is *written* to cover the codes, not that it *passes*. If there is no source link and no server, there is no independent oracle, so the verdict is **UNVERIFIED**, not PASS. Provide a source root as the second `scan` arg (`huma scan openapi.yaml .`) so the denominator comes from real handler branches (ground truth) — OpenAPI declarations can only *add* branches, never shrink them.
 
-### Live Mode (server running)
+### Live Mode (`huma cover`)
 
-With `testing.server` config, huma:
-1. Checks server healthcheck (prompts to start if down)
-2. Builds instrumented binary
-3. Starts server, waits for ready endpoint
-4. Runs hurl test
-5. Collects per-handler line coverage
-6. Reports uncovered lines in IMPROVE prompt
+With `testing.server` config, `huma cover` brings the server up once and, per endpoint:
+1. Builds the instrumented binary (once)
+2. Resets coverage → starts the server → waits for the ready endpoint
+3. Runs the endpoint's hurl test
+4. Stops the server (Go flushes coverage only on exit) → collects per-handler line coverage
+5. Feeds runtime coverage into the CRI gate → PASS (SMOKE/COVERED) or IMPROVE with uncovered lines
+
+Add `--generate` to have an LLM author each `.hurl` and converge it through the gate unattended. (Go targets must handle `SIGINT` with a graceful shutdown so coverage counters flush.)
 
 ## Common Errors and Fixes
 
@@ -163,13 +161,13 @@ All errors carry a rule ID. See `rulebook.md` for the full catalog.
 
 | Rule ID | Error | Cause | Fix |
 |---------|-------|-------|-----|
-| S-01 | `[S-01] No session found` | Haven't scanned yet | Run `huma scan --from openapi.yaml` |
+| S-01 | `[S-01] No session found` | Haven't scanned yet | Run `huma scan openapi.yaml` |
 | H-01 | `[H-01] Hurl file not found at expected path` | .hurl not at expected path | Check `huma next` output for expected filename |
 | M-02 | `[M-02] manifest.yaml parse error` | Bad manifest.yaml | Validate YAML syntax |
-| E-01 | `[E-01] No OpenAPI file found` | No openapi.yaml and --from not specified | Place openapi.yaml in project root or use `--from` |
+| E-01 | `[E-01] No OpenAPI file found` | No openapi.yaml and no path arg given | Place openapi.yaml in project root or pass it: `huma scan <path>` |
 | H-02 | `[H-02] Hurl execution failed` | hurl binary not installed or server not running | Install hurl: `cargo install hurl` or `brew install hurl` |
 | A-02 | `[A-02] Server build command failed` | Build command errored | Check build command in manifest.yaml testing.server.build |
-| C-01 | Verdict downgraded to UNVERIFIED | No-signal cannot PASS (no oracle/execution/denominator) | Add `--link-source` or `testing.server` so coverage can be measured |
+| C-01 | Verdict downgraded to UNVERIFIED | No-signal cannot PASS (no oracle/execution/denominator) | Pass a source root to `huma scan`, or add `testing.server`, so coverage can be measured |
 | C-02 | Denominator must be monotonic | Input spec tried to shrink ground-truth branches | Don't rely on a thin OpenAPI; source branches set the floor |
 | C-03 | Assertion depth too shallow | Entry asserts status only (or is skip/empty) | Add body/header assertions for the branch |
 | C-04 | DONE requires a reason | Uncovered branch has no justification | Record it in `.huma/unreachable.yaml` (reason + source evidence) |

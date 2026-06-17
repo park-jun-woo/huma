@@ -4,7 +4,7 @@
   <img src="huma.webp" alt="huma" width="480" />
 </p>
 
-[![Version](https://img.shields.io/badge/version-v0.2.1-blue.svg)](https://github.com/park-jun-woo/huma/releases)
+[![Version](https://img.shields.io/badge/version-v0.3.0-blue.svg)](https://github.com/park-jun-woo/huma/releases)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![skills.sh](https://skills.sh/b/park-jun-woo/huma)](https://skills.sh/park-jun-woo/huma)
 
@@ -31,43 +31,48 @@ That's it. Your AI agent now knows how to run the full ratchet loop. See [SKILL.
 
 ## How it works
 
+huma is built on the [reins](https://github.com/park-jun-woo/reins) quest framework: **generation is probabilistic, the gate is deterministic, and only the gate locks `PASS`.**
+
 ```
 openapi.yaml ──► huma scan ──► session
                                   │
-                            huma next ◄──┐
-                              │          │
-                      ┌───────┴───────┐  │
-                      │  TODO         │  │
-                      │  (no .hurl)   │  │
-                      └───────┬───────┘  │
-                        agent writes     │
-                        .hurl file       │
-                              │          │
-                      ┌───────┴───────┐  │
-                      │  PASS/IMPROVE │──┘
-                      └───────────────┘
+                            huma next ──► (read-only) TODO prompt
+                              │            handler source + responses + hurl example
+                        agent writes .hurl
+                              │
+                       huma submit ──► CRI gate ──► PASS / IMPROVE / UNVERIFIED
+                              ▲                          │
+                              └──────── retry ◄──────────┘
+
+   live + unattended:  huma cover --generate   (LLM writes .hurl, server measures, gate converges)
 ```
 
 ```bash
-# 1. Scan endpoints from OpenAPI (or auto-detect openapi.yaml)
-huma scan --from openapi.yaml
+# 1. Seed endpoints from OpenAPI (+ optional source-link root for the branch oracle)
+huma scan openapi.yaml .          # or just `huma scan` to auto-detect openapi.yaml
 
-# 2. Ratchet loop
-huma next     # shows TODO → agent writes .hurl → run again
-huma status   # check progress
+# 2a. Manual loop
+huma next                          # show next TODO + authoring prompt (read-only)
+#    ...agent writes the .hurl file...
+huma submit --key <id>             # evaluate that endpoint through the CRI gate
+huma status                        # progress + per-endpoint CRI tier
+
+# 2b. Or unattended (live): LLM generates and converges every endpoint
+huma cover --generate --model claude:sonnet
 ```
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `huma scan` | Auto-detect `openapi.yaml` and scan endpoints |
-| `huma scan --from <file>` | Scan from OpenAPI, JSON array, or YAML |
-| `huma next` | Show next TODO, or verify current and advance |
-| `huma verify` | Run hurl test and advance if passing |
-| `huma status` | Show progress (TODO/PASS/IMPROVE/DONE/UNVERIFIED) with per-endpoint CRI tier |
-| `huma scan --link-source <root>` | Map OpenAPI handlers to source `file:line` (enables source-branch oracle) |
-| `huma prompt` | Output agent prompt for current TODO (no side effects) |
+| `huma scan [openapi] [src-root]` | Seed endpoints. Arg 1 = OpenAPI/JSON/YAML (auto-detects `openapi.yaml` if omitted); arg 2 = source root to link handlers to `file:line` (enables the source-branch oracle) |
+| `huma next` | Show the next TODO + authoring prompt (**read-only** — does not advance) |
+| `huma submit --key <id> [--in <hurl>\|-]` | Evaluate one endpoint's `.hurl` through the CRI gate (static). `--in` is the hurl path; omit to use the conventional path |
+| `huma cover` | **Live mode**: bring the server up once, run each endpoint's hurl, measure runtime coverage, gate each |
+| `huma cover --generate [--model <b:m>] [--max-items N]` | **Unattended loop**: LLM generates `.hurl`, server measures, CRI gate converges to PASS/DONE |
+| `huma status` | Progress tally (TODO/PASS/IMPROVE/UNVERIFIED/DONE/SKIPPED) with per-endpoint CRI tier |
+| `huma rules` | Print the gate's rule catalog (M/E/H/S/A/C) |
+| `huma export` | Emit terminal results as JSONL (emit-once) |
 
 ## Two modes
 
@@ -110,7 +115,9 @@ testing:
     ready: "/api/health"
 ```
 
-huma builds, starts, and instruments the server. Healthcheck failure prompts the agent to start the server first.
+`huma cover` then builds the instrumented server, brings it up once, and per endpoint resets coverage → runs the hurl → stops (to flush coverage) → collects. Add `--generate` to have an LLM author each `.hurl` and converge it through the gate unattended.
+
+> **Go coverage note:** Go flushes integration coverage only on process exit, so `cover` cycles the server per endpoint and the target server must handle `SIGINT` with a graceful shutdown for counters to be written.
 
 ### NestJS + Supabase
 
@@ -195,7 +202,7 @@ testing:
 |-------|---------|
 | **TODO** | No .hurl file. Agent gets handler source + expected responses + hurl example. |
 | **IMPROVE** | Hurl exists but missing response status codes. Agent gets specific missing codes. |
-| **UNVERIFIED** | No independent oracle: source is unlinked **and** the server is uninstrumented (no runtime evidence). Measurement failed, so this is **not** a pass. Fix with `--link-source` or `testing.server`. |
+| **UNVERIFIED** | No independent oracle: source is unlinked **and** the server is uninstrumented (no runtime evidence). Measurement failed, so this is **not** a pass. Fix by passing a source root to `huma scan` or adding `testing.server`. |
 | **PASS** | All expected client branches covered, at or above the required evidence tier (CRI). |
 | **DONE** | Coverage stalled after retry, **and** every uncovered branch has a verifiable reason in `.huma/unreachable.yaml`. Accepted at current level. |
 

@@ -21,5 +21,8 @@ CLAUDE.md
 # Plans
 plans/
 
+# Scratch notes (local only)
+files/
+
 # Environment
 .env
