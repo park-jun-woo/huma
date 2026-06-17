@@ -1,3 +1,9 @@
+# Pre-reins implementation backup (local only)
+bak/
+
+# Test fixture — external backend copy (local only)
+test/
+
 # Binary
 huma
 testdata/server/server

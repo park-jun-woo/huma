@@ -87,9 +87,9 @@ program logic, not as a separate rule — huma has no defeats graph.
 
 | Rule ID | Level | Description |
 |---------|-------|-------------|
-| C-01 | ERROR | No-signal verdict cannot PASS — downgraded to UNVERIFIED (invariant) |
+| C-01 | ERROR | No-signal verdict cannot PASS — downgraded to UNVERIFIED |
 | C-02 | ERROR | Denominator is monotonic — input spec cannot shrink ground-truth branches |
-| C-03 | WARNING | Assertion depth (A) below the required level — IMPROVE |
+| C-03 | WARNING | Assertion depth below required level |
 | C-04 | WARNING | DONE requires an `unreachable.yaml` reason artifact for uncovered branches |
 
 ## Output Format

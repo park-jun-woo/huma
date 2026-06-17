@@ -14,6 +14,7 @@ required:
     analyzer: "static response analysis"
     hurlcheck: "hurl file status code verification"
     rule: "validation rule ID definitions and formatting"
+    gate: "reins gate.Definition consumer — Seed/Render/Prepare/Rules/Evaluate"
   type:
     command: "cobra command entrypoint"
     engine: "core logic orchestration"

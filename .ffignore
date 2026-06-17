@@ -3,3 +3,5 @@ testdata/
 vendor/
 *.pb.go
 *_gen.go
+test/
+bak/
