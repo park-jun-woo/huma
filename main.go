@@ -11,8 +11,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Version is set at build time via -ldflags "-X main.Version=...".
-var Version = "dev"
+// Version is the build-time default, overridable via -ldflags "-X main.Version=...".
+var Version = "v0.3.0"
 
 func main() {
 	def := humaquest.Def()

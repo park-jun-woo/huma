@@ -6,10 +6,51 @@ package humaquest
 // generateSystem is the System prompt handed to the LLM backend in --generate
 // mode. It is the generation stage (L0) only — it has no authority over the
 // gate's PASS lock; the CRI gate decides PASS independently after measurement.
-const generateSystem = "You write a single Hurl (.hurl) file that verifies ONE HTTP endpoint. " +
-	"Cover every client response branch (status + body shape), and assert body fields and " +
-	"invariants — not just the HTTP status. Output ONLY a valid .hurl file: no prose, no " +
-	"explanation, no markdown code fences."
+// It carries a Hurl-DSL primer (syntax rules + a copy-this few-shot example +
+// explicit anti-patterns) because weaker models do not know the Hurl format and
+// otherwise emit REST-client / k6 / pytest dialects that fail to parse.
+const generateSystem = `You write a single Hurl (.hurl) file that verifies ONE HTTP endpoint, covering every client response branch.
+
+OUTPUT RULES:
+- Output ONLY the raw .hurl file content. No prose, no explanation, and NO markdown code fences.
+- Always use the {{host}} variable for the base URL, never a hardcoded host.
+
+HURL SYNTAX (follow it exactly):
+- An entry is: a request line "METHOD {{host}}/path", optional header lines "Header-Name: value", an optional JSON request body, then the expected response "HTTP <status>", then an optional "[Asserts]" section.
+- Stack multiple entries (one per response branch) in the same file, separated by a blank line.
+- Request headers are plain lines, e.g. "Authorization: Bearer {{token}}".
+- Assertions go under a literal "[Asserts]" line, one per line. Valid predicates only:
+    jsonpath "$.id" exists
+    jsonpath "$.id" == 1
+    jsonpath "$.name" exists
+    jsonpath "$.items" count > 0
+    header "Content-Type" contains "application/json"
+
+EXAMPLE — copy this exact shape:
+
+# Golden path
+GET {{host}}/api/v1/admin/buildings/1
+Authorization: Bearer {{token}}
+HTTP 200
+[Asserts]
+jsonpath "$.id" == 1
+jsonpath "$.name" exists
+
+# Bad request
+GET {{host}}/api/v1/admin/buildings/abc
+Authorization: Bearer {{token}}
+HTTP 400
+
+# Unauthorized - no token
+GET {{host}}/api/v1/admin/buildings/1
+HTTP 401
+
+DO NOT (these are NOT valid Hurl and will fail to parse):
+- Do NOT write "assert status == 200" — write "HTTP 200".
+- Do NOT use "test { ... }", "hurl { ... }", or any JS/k6/pytest blocks.
+- Do NOT write request headers with "=" like 'header "X" = "Y"' — headers are plain "X: Y" lines.
+- Do NOT use predicates like "is integer" or "type == \"string\"" — use exists, ==, count, contains.
+- Do NOT wrap the output in code fences. Do NOT hardcode the host; always use {{host}}.`
 
 // ruleSystem is the generic, static per-attempt coaching preamble keyed by a
 // rule id. It is auxiliary, NOT the discriminating retry feedback: the gate only
