@@ -1,5 +1,5 @@
 //ff:func feature=gate type=command control=sequence level=error
-//ff:what `huma cover` ExtraCommand를 만든다. 루트의 persistent 플래그(--session/--out)를 런타임에 상속받아 읽고, manifest를 로드해 실서버 probe(newLiveProbe)를 구성한 뒤 runCover에 넘긴다. --generate면 buildBackend(--model)로 LLM backend를 만들어 무인 생성 루프를 켜고, --max-items로 처리할 distinct endpoint 수를 캡한다. 서버 라이프사이클을 소유하는 huma 전용 명령 — 계측 바이너리를 한 번 컴파일하고, 엔드포인트마다 Start/Stop/Collect로 측정하며 전 TODO를 순회한다(Go 커버리지는 프로세스 종료 시 flush).
+//ff:what `huma cover` ExtraCommand를 만든다. 루트의 persistent 플래그(--session/--out)를 런타임에 상속받아 읽고, manifest를 로드해 실서버 probe(newLiveProbe)를 구성한 뒤 runCover에 넘긴다. Phase 009: newLiveProbe 직후 setupVars로 testing.setup(캡처) 또는 testing.auth(mint)를 1회 실행해 token·픽스처를 lp.extraVars에 적재한다(Measure가 정적 변수 위에 합류). --generate면 buildBackend(--model)로 LLM backend를 만들어 무인 생성 루프를 켜고, --max-items로 처리할 distinct endpoint 수를 캡한다. 서버 라이프사이클을 소유하는 huma 전용 명령 — 계측 바이너리를 한 번 컴파일하고, 엔드포인트마다 Start/Stop/Collect로 측정하며 전 TODO를 순회한다(Go 커버리지는 프로세스 종료 시 flush).
 
 package humaquest
 
@@ -41,7 +41,13 @@ func NewCoverCmd(def gate.Definition) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return runCover(def, newLiveProbe(cfg), backend, maxItems, sessionPath, outPath, cmd.OutOrStdout())
+			// Phase 009: resolve the dynamic test variables (token/fixtures) once,
+			// before the loop, and load them into the probe's extraVars. Measure
+			// merges them over cfg.HurlVariables, so both manual and --generate
+			// endpoint runs get {{token}} injected.
+			lp := newLiveProbe(cfg)
+			lp.extraVars = setupVars(lp.adapter, cfg, cmd.OutOrStdout())
+			return runCover(def, lp, backend, maxItems, sessionPath, outPath, cmd.OutOrStdout())
 		},
 	}
 	cmd.Flags().BoolVar(&generate, "generate", false, "generate .hurl files with an LLM and converge them via the CRI gate (opt-in)")

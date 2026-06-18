@@ -155,6 +155,41 @@ With `testing.server` config, `huma cover` brings the server up once and, per en
 
 Add `--generate` to have an LLM author each `.hurl` and converge it through the gate unattended. (Go targets must handle `SIGINT` with a graceful shutdown so coverage counters flush.)
 
+### Auth & fixtures: dynamic `{{token}}`
+
+Protected endpoints (`Authorization: Bearer {{token}}`) abort before sending if `{{token}}` is undefined, so static `hurl_variables` can't cover login-gated paths. `huma cover` resolves the token (and any fixtures) **once before the loop** and injects them into **every** endpoint hurl run — manual and `--generate` alike. Captured/minted vars override `hurl_variables` on a name clash.
+
+**Capture (recommended)** — `testing.setup.hurl` runs a user-authored login `.hurl`; its `[Captures]` become injected variables:
+
+```yaml
+testing:
+  setup:
+    hurl: "setup/auth.hurl"
+```
+```
+# setup/auth.hurl
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+{"email":"admin@example.com","password":"secret"}
+HTTP 200
+[Captures]
+token: jsonpath "$.token"
+# building_id: jsonpath "$.building.id"   # fixtures come free
+```
+
+**Mint (option)** — `testing.auth` hand-signs an HS256 token from a secret env var, no login needed:
+
+```yaml
+testing:
+  auth:
+    type: "jwt-hs256"
+    secret_env: "GOZHIP_JWT_SECRET"
+    claims: { role: "admin", sub: "1" }
+```
+Limitation: claim types/algorithm must match the app (claims emitted as strings; RS256/ES256 out of scope — use capture).
+
+> **Admin seeding is a prerequisite.** Capture logs in, so a login-capable admin user must already exist. huma does NOT seed users (app-specific) — put the seed command in `testing.deps.up` or seed manually. Mint bypasses seeding. On capture/mint failure huma warns and continues token-less.
+
 ## Common Errors and Fixes
 
 All errors carry a rule ID. See `rulebook.md` for the full catalog.

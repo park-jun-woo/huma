@@ -17,4 +17,9 @@ import (
 type liveProbe struct {
 	adapter adapter.Adapter
 	cfg     *config.Config
+	// extraVars are the dynamically captured/minted hurl variables (token,
+	// fixtures) populated once before the loop (Phase 009). Measure merges them
+	// over cfg.HurlVariables, so BOTH the manual and --generate paths (both route
+	// through Measure) inject {{token}} into every endpoint's hurl run.
+	extraVars map[string]string
 }

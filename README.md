@@ -119,6 +119,48 @@ testing:
 
 > **Go coverage note:** Go flushes integration coverage only on process exit, so `cover` cycles the server per endpoint and the target server must handle `SIGINT` with a graceful shutdown for counters to be written.
 
+### Auth & fixtures: dynamic `{{token}}` (live mode)
+
+Protected endpoints need an `Authorization: Bearer {{token}}` value that static `hurl_variables` can't supply (tokens expire, fixture IDs are created at runtime). `huma cover` resolves these **once before the loop** and injects them into **every** endpoint's hurl run (both manual and `--generate`). Captured/minted variables override `hurl_variables` on a name clash.
+
+**Capture (recommended)** — `testing.setup` points at a user-authored `.hurl` that logs in and captures the token (and any fixtures) via hurl's native `[Captures]`:
+
+```yaml
+testing:
+  # ... server config as above, plus:
+  setup:
+    hurl: "setup/auth.hurl"
+```
+
+`setup/auth.hurl`:
+
+```
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+{"email":"admin@example.com","password":"secret"}
+HTTP 200
+[Captures]
+token: jsonpath "$.token"
+# fixtures come free — capture anything the setup hurl declares:
+# building_id: jsonpath "$.building.id"
+```
+
+Every variable the setup hurl captures (`token`, `building_id`, …) is injected as `{{token}}`, `{{building_id}}`, etc. Capture happens once per loop — a stateless JWT stays valid across the per-endpoint server restarts.
+
+**Mint (option, no login)** — when you hold the signing secret, `testing.auth` hand-signs an HS256 token directly, skipping the login endpoint:
+
+```yaml
+testing:
+  auth:
+    type: "jwt-hs256"
+    secret_env: "GOZHIP_JWT_SECRET"   # secret read from this env var
+    claims: { role: "admin", sub: "1", twofa_complete: "true" }
+```
+
+huma signs `{header,claims+exp}` with the env secret and injects the result as `{{token}}`. Limitation: the claim value types and algorithm must match what your app expects (claims are emitted as strings; RS256/ES256 are out of scope — use capture for those).
+
+> **Prerequisite — seed an admin user:** the capture path logs in, so a login-capable admin user must already exist in the DB. User seeding is app-specific (schema/hash dependent), so huma does **not** do it: put your seed command in `testing.deps.up` or seed before running. The mint path bypasses seeding (signature-only). If capture/mint fails, huma warns loudly and continues token-less so you still see which endpoints 401.
+
 ### NestJS + Supabase
 
 ```yaml

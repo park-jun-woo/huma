@@ -8,6 +8,11 @@ type TestingConfig struct {
 	HurlVariables map[string]string `yaml:"hurl_variables"`
 	Deps          DepsConfig        `yaml:"deps"`
 	Server        ServerConfig      `yaml:"server"`
+	// Setup is the setup .hurl run once before the cover loop; its [Captures]
+	// become injected hurl variables (Phase 009 / 2-A).
+	Setup SetupConfig `yaml:"setup"`
+	// Auth is the JWT-mint config (Phase 009 / 2-B), previously unwired.
+	Auth AuthConfig `yaml:"auth"`
 	// RequireCRI is the minimum cheese-resistance index (0..3) a verdict must
 	// reach to be granted PASS. -1 (unset) means huma auto-requires the maximum
 	// CRI reachable in the current mode.

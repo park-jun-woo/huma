@@ -34,6 +34,8 @@ func Load() (*Config, error) {
 		},
 		Server:     m.Testing.Server,
 		Deps:       m.Testing.Deps,
+		Setup:      m.Testing.Setup,
+		Auth:       m.Testing.Auth,
 		RequireCRI: m.Testing.RequireCRI,
 	}
 
