@@ -677,13 +677,16 @@ func TestRenderCoverVerdict_Facts(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// NewCoverCmd
+// NewLoopCmd
 // ---------------------------------------------------------------------------
 
-func TestNewCoverCmd_Shape(t *testing.T) {
-	cmd := NewCoverCmd(Def())
-	if cmd.Use != "cover" {
-		t.Errorf("Use = %q, want cover", cmd.Use)
+func TestNewLoopCmd_Shape(t *testing.T) {
+	cmd := NewLoopCmd(Def())
+	if cmd.Use != "loop" {
+		t.Errorf("Use = %q, want loop", cmd.Use)
+	}
+	if len(cmd.Aliases) != 0 {
+		t.Errorf("Aliases = %v, want none (clean cut: cover removed)", cmd.Aliases)
 	}
 	if cmd.Short == "" {
 		t.Error("Short is empty")
@@ -691,11 +694,27 @@ func TestNewCoverCmd_Shape(t *testing.T) {
 	if cmd.RunE == nil {
 		t.Fatal("RunE is nil")
 	}
+	if cmd.Flags().Lookup("measure-only") == nil {
+		t.Error("--measure-only flag is not registered")
+	}
+	modelFlag := cmd.Flags().Lookup("model")
+	if modelFlag == nil {
+		t.Fatal("--model flag is not registered")
+	}
+	if modelFlag.DefValue != "ollama:gemma4:e4b" {
+		t.Errorf("--model default = %q, want ollama:gemma4:e4b", modelFlag.DefValue)
+	}
+	if cmd.Flags().Lookup("max-items") == nil {
+		t.Error("--max-items flag is not registered")
+	}
+	if cmd.Flags().Lookup("generate") != nil {
+		t.Error("--generate flag should be removed (clean cut)")
+	}
 }
 
-func TestNewCoverCmd_RunE_NoManifest(t *testing.T) {
+func TestNewLoopCmd_RunE_NoManifest(t *testing.T) {
 	chdir(t, t.TempDir()) // no manifest.yaml here
-	cmd := NewCoverCmd(Def())
+	cmd := NewLoopCmd(Def())
 	// Register the persistent flags the RunE reads (normally inherited from root).
 	cmd.Flags().String("session", "session.json", "")
 	cmd.Flags().String("out", "out.jsonl", "")
@@ -709,22 +728,47 @@ func TestNewCoverCmd_RunE_NoManifest(t *testing.T) {
 	}
 }
 
-func TestNewCoverCmd_RunE_MissingSessionFlag(t *testing.T) {
+func TestNewLoopCmd_RunE_MissingSessionFlag(t *testing.T) {
 	chdir(t, t.TempDir())
-	cmd := NewCoverCmd(Def())
+	cmd := NewLoopCmd(Def())
 	// No "session" flag registered → GetString("session") errors.
 	if err := cmd.RunE(cmd, nil); err == nil {
 		t.Fatal("want error when the session flag is undefined")
 	}
 }
 
-func TestNewCoverCmd_RunE_MissingOutFlag(t *testing.T) {
+func TestNewLoopCmd_RunE_MissingOutFlag(t *testing.T) {
 	chdir(t, t.TempDir())
-	cmd := NewCoverCmd(Def())
+	cmd := NewLoopCmd(Def())
 	cmd.Flags().String("session", "session.json", "")
 	// "out" flag absent → GetString("out") errors.
 	if err := cmd.RunE(cmd, nil); err == nil {
 		t.Fatal("want error when the out flag is undefined")
+	}
+}
+
+func TestNewLoopCmd_RunE_BackendBuildError(t *testing.T) {
+	dir := t.TempDir()
+	chdir(t, dir)
+	// A valid manifest gets past config.Load, so RunE reaches buildBackend.
+	if err := os.WriteFile(filepath.Join(dir, "manifest.yaml"), []byte(coverManifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := NewLoopCmd(Def())
+	cmd.Flags().String("session", filepath.Join(dir, "session.json"), "")
+	cmd.Flags().String("out", filepath.Join(dir, "out.jsonl"), "")
+	// Generation is ON by default; an unparseable --model (no backend:model colon)
+	// makes buildBackend → llm.FromFlag fail, exercising RunE's backend-error branch.
+	if err := cmd.Flags().Set("model", "bogus-no-colon"); err != nil {
+		t.Fatal(err)
+	}
+
+	err := cmd.RunE(cmd, nil)
+	if err == nil {
+		t.Fatal("want error when --model is unparseable for generate mode")
+	}
+	if !strings.Contains(err.Error(), "--model") {
+		t.Errorf("error = %v, want it to mention the invalid --model", err)
 	}
 }
 
@@ -746,7 +790,7 @@ testing:
     ready: /health
 `
 
-func TestNewCoverCmd_RunE_RunsCoverOnEmptySession(t *testing.T) {
+func TestNewLoopCmd_RunE_RunsCoverOnEmptySession(t *testing.T) {
 	dir := t.TempDir()
 	chdir(t, dir)
 	if err := os.WriteFile(filepath.Join(dir, "manifest.yaml"), []byte(coverManifest), 0o644); err != nil {
@@ -755,7 +799,7 @@ func TestNewCoverCmd_RunE_RunsCoverOnEmptySession(t *testing.T) {
 	// Empty seeded session → runCover loops zero times (no server, no Measure).
 	sessPath := seedCoverSession(t, dir)
 
-	cmd := NewCoverCmd(Def())
+	cmd := NewLoopCmd(Def())
 	cmd.Flags().String("session", sessPath, "")
 	cmd.Flags().String("out", filepath.Join(dir, "out.jsonl"), "")
 

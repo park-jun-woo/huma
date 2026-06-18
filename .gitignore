@@ -13,6 +13,10 @@ testdata/server/server
 .tsma/
 .whyso/
 
+# Runtime quest state (reins session + export results)
+session.json
+*-results.jsonl
+
 # Local config
 .clari/
 .claude/

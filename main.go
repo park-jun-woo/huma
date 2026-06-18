@@ -18,11 +18,14 @@ func main() {
 	def := humaquest.Def()
 	root := cli.NewQuestCmd("huma", def, cli.Options{
 		Version: Version,
-		// cover owns the session-scoped server lifecycle (Phase 006): it brings the
-		// server up once, loops over all TODO endpoints injecting live coverage into
-		// the gate, and tears down. reins' canonical submit/loop are one-shot and have
-		// no server bring-up hook, so this huma-specific command supplies it.
-		ExtraCommands: []*cobra.Command{humaquest.NewCoverCmd(def)},
+		// huma's `loop` owns the session-scoped server lifecycle (Phase 006/010): it
+		// brings the server up once, has an LLM generate .hurl for each TODO endpoint,
+		// measures live runtime coverage, injects it into the CRI gate, retries until
+		// convergence, and tears down. reins' canonical submit/loop are one-shot and
+		// have no server bring-up hook, so this huma-specific command supplies it.
+		// reins' static Loop option is intentionally omitted: enabling it would register
+		// a second `loop` command and collide with huma's live loop.
+		ExtraCommands: []*cobra.Command{humaquest.NewLoopCmd(def)},
 	})
 	if err := root.Execute(); err != nil {
 		os.Exit(1)

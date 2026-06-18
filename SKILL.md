@@ -36,8 +36,8 @@ Requires **Go 1.22+**. No cgo dependency — pure Go. Built on the [reins](https
 | `huma scan [openapi] [src-root]` | Seed endpoints. Arg 1 = OpenAPI/JSON/YAML (auto-detects `openapi.yaml` if omitted); arg 2 = source root linking handlers to `file:line` (source-branch oracle) |
 | `huma next` | Show the next TODO + authoring prompt (**read-only** — does not advance) |
 | `huma submit --key <id> [--in <hurl>\|-]` | Evaluate one endpoint's `.hurl` through the CRI gate (static). `--in` is the hurl path; omit for the conventional path |
-| `huma cover` | **Live mode**: bring the server up once, run each endpoint's hurl, measure runtime coverage, gate each |
-| `huma cover --generate [--model <b:m>] [--max-items N]` | **Unattended loop**: LLM generates `.hurl`, server measures, CRI gate converges |
+| `huma loop [--model <b:m>] [--max-items N]` | **Unattended live loop**: bring the server up once, have an LLM generate each remaining TODO's `.hurl`, run it, measure runtime coverage, and converge through the CRI gate. `--model` defaults to `ollama:gemma4:e4b` |
+| `huma loop --measure-only` | Measure existing `.hurl` against the live server with no LLM generation — coverage measurement only |
 | `huma status` | Progress (TODO/PASS/IMPROVE/UNVERIFIED/DONE/SKIPPED) with per-endpoint CRI tier |
 | `huma rules` | Print the gate's rule catalog (M/E/H/S/A/C) |
 | `huma export` | Emit terminal results as JSONL (emit-once) |
@@ -52,10 +52,16 @@ Requires **Go 1.22+**. No cgo dependency — pure Go. Built on the [reins](https
    b. Write the .hurl file at the path shown
    c. huma submit --key <id>   — evaluate through the CRI gate → PASS / IMPROVE / UNVERIFIED
    d. Repeat until "All complete"
-   OR unattended (live): huma cover --generate --model claude:sonnet
+   OR unattended: huma loop                          (default model ollama:gemma4:e4b)
+                  huma loop --measure-only           (measure existing .hurl, no LLM)
 ```
 
-> **`next` is read-only.** Unlike older versions, `huma next` only *shows* the prompt — use `huma submit` to evaluate, or `huma cover` to run the live loop over all endpoints.
+> **`next` is read-only.** Unlike older versions, `huma next` only *shows* the prompt — use `huma submit` to evaluate one endpoint, or `huma loop` to run the live loop over all endpoints (server up, LLM authors each `.hurl`, gate converges).
+
+### The unattended loop
+
+- **`huma loop`** — live: brings the server up once, an LLM authors each `.hurl`, runs it, and runtime coverage (CRI up to 3, COVERED) is injected into the gate; FAIL feedback + rule coaching feed the retry until convergence. Requires `testing.server`. Generation is ON by default (model defaults to `ollama:gemma4:e4b`).
+- **`huma loop --measure-only`** — same server-owning measurement loop, but no LLM generation: it measures the `.hurl` files you already wrote against the live server.
 
 ### Step 1: manifest.yaml
 
@@ -102,7 +108,7 @@ huma next
 huma submit --key <id>         # evaluate → PASS / IMPROVE / UNVERIFIED
 ```
 
-`huma next` is read-only (shows the prompt only). After writing the `.hurl`, run `huma submit --key <id>` to evaluate it; on PASS the ratchet locks it. For full live verification across all endpoints, use `huma cover` (or `huma cover --generate` to let an LLM author and converge them unattended).
+`huma next` is read-only (shows the prompt only). After writing the `.hurl`, run `huma submit --key <id>` to evaluate it; on PASS the ratchet locks it. For full live verification across all endpoints, use `huma loop` (an LLM authors and converges each `.hurl` unattended; add `--measure-only` to measure your own `.hurl` without generation).
 
 ## Key Concepts
 
@@ -144,20 +150,20 @@ Without `testing.server`, huma uses OpenAPI responses and/or source code static 
 
 **Static mode does not execute hurl** — it verifies the file is *written* to cover the codes, not that it *passes*. If there is no source link and no server, there is no independent oracle, so the verdict is **UNVERIFIED**, not PASS. Provide a source root as the second `scan` arg (`huma scan openapi.yaml .`) so the denominator comes from real handler branches (ground truth) — OpenAPI declarations can only *add* branches, never shrink them.
 
-### Live Mode (`huma cover`)
+### Live Mode (`huma loop`)
 
-With `testing.server` config, `huma cover` brings the server up once and, per endpoint:
+With `testing.server` config, `huma loop` brings the server up once and, per endpoint:
 1. Builds the instrumented binary (once)
 2. Resets coverage → starts the server → waits for the ready endpoint
 3. Runs the endpoint's hurl test
 4. Stops the server (Go flushes coverage only on exit) → collects per-handler line coverage
 5. Feeds runtime coverage into the CRI gate → PASS (SMOKE/COVERED) or IMPROVE with uncovered lines
 
-Add `--generate` to have an LLM author each `.hurl` and converge it through the gate unattended. (Go targets must handle `SIGINT` with a graceful shutdown so coverage counters flush.)
+By default an LLM authors each `.hurl` and converges it through the gate unattended; pass `--measure-only` to measure your existing `.hurl` without generation. (Go targets must handle `SIGINT` with a graceful shutdown so coverage counters flush.)
 
 ### Auth & fixtures: dynamic `{{token}}`
 
-Protected endpoints (`Authorization: Bearer {{token}}`) abort before sending if `{{token}}` is undefined, so static `hurl_variables` can't cover login-gated paths. `huma cover` resolves the token (and any fixtures) **once before the loop** and injects them into **every** endpoint hurl run — manual and `--generate` alike. Captured/minted vars override `hurl_variables` on a name clash.
+Protected endpoints (`Authorization: Bearer {{token}}`) abort before sending if `{{token}}` is undefined, so static `hurl_variables` can't cover login-gated paths. `huma loop` resolves the token (and any fixtures) **once before the loop** and injects them into **every** endpoint hurl run — generated and `--measure-only` alike. Captured/minted vars override `hurl_variables` on a name clash.
 
 **Capture (recommended)** — `testing.setup.hurl` runs a user-authored login `.hurl`; its `[Captures]` become injected variables:
 

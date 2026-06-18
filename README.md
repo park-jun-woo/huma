@@ -44,7 +44,8 @@ openapi.yaml ──► huma scan ──► session
                               ▲                          │
                               └──────── retry ◄──────────┘
 
-   live + unattended:  huma cover --generate   (LLM writes .hurl, server measures, gate converges)
+   unattended:  huma loop                  (LLM writes .hurl, server measures runtime coverage, gate converges)
+                huma loop --measure-only    (measure existing .hurl, no LLM)
 ```
 
 ```bash
@@ -57,8 +58,11 @@ huma next                          # show next TODO + authoring prompt (read-onl
 huma submit --key <id>             # evaluate that endpoint through the CRI gate
 huma status                        # progress + per-endpoint CRI tier
 
-# 2b. Or unattended (live): LLM generates and converges every endpoint
-huma cover --generate --model claude:sonnet
+# 2b. Or unattended: the server runs, an LLM generates each endpoint's .hurl, and runtime
+#     coverage is measured and converged through the gate
+huma loop                          # --model defaults to ollama:gemma4:e4b
+huma loop --model claude:sonnet --max-items 50
+huma loop --measure-only           # measure existing .hurl only; no LLM
 ```
 
 ## Commands
@@ -68,8 +72,8 @@ huma cover --generate --model claude:sonnet
 | `huma scan [openapi] [src-root]` | Seed endpoints. Arg 1 = OpenAPI/JSON/YAML (auto-detects `openapi.yaml` if omitted); arg 2 = source root to link handlers to `file:line` (enables the source-branch oracle) |
 | `huma next` | Show the next TODO + authoring prompt (**read-only** — does not advance) |
 | `huma submit --key <id> [--in <hurl>\|-]` | Evaluate one endpoint's `.hurl` through the CRI gate (static). `--in` is the hurl path; omit to use the conventional path |
-| `huma cover` | **Live mode**: bring the server up once, run each endpoint's hurl, measure runtime coverage, gate each |
-| `huma cover --generate [--model <b:m>] [--max-items N]` | **Unattended loop**: LLM generates `.hurl`, server measures, CRI gate converges to PASS/DONE |
+| `huma loop [--model <b:m>] [--max-items N]` | **Unattended live loop**: bring the server up once, have an LLM generate each remaining TODO's `.hurl`, run it, measure runtime coverage, and converge through the CRI gate to PASS/DONE. `--model` defaults to `ollama:gemma4:e4b` |
+| `huma loop --measure-only` | Measure existing `.hurl` against the live server with no LLM generation — coverage measurement only |
 | `huma status` | Progress tally (TODO/PASS/IMPROVE/UNVERIFIED/DONE/SKIPPED) with per-endpoint CRI tier |
 | `huma rules` | Print the gate's rule catalog (M/E/H/S/A/C) |
 | `huma export` | Emit terminal results as JSONL (emit-once) |
@@ -115,13 +119,13 @@ testing:
     ready: "/api/health"
 ```
 
-`huma cover` then builds the instrumented server, brings it up once, and per endpoint resets coverage → runs the hurl → stops (to flush coverage) → collects. Add `--generate` to have an LLM author each `.hurl` and converge it through the gate unattended.
+`huma loop` then builds the instrumented server, brings it up once, and per endpoint resets coverage → runs the hurl → stops (to flush coverage) → collects. By default an LLM authors each `.hurl` and converges it through the gate unattended; pass `--measure-only` to measure existing `.hurl` without generation.
 
-> **Go coverage note:** Go flushes integration coverage only on process exit, so `cover` cycles the server per endpoint and the target server must handle `SIGINT` with a graceful shutdown for counters to be written.
+> **Go coverage note:** Go flushes integration coverage only on process exit, so `loop` cycles the server per endpoint and the target server must handle `SIGINT` with a graceful shutdown for counters to be written.
 
 ### Auth & fixtures: dynamic `{{token}}` (live mode)
 
-Protected endpoints need an `Authorization: Bearer {{token}}` value that static `hurl_variables` can't supply (tokens expire, fixture IDs are created at runtime). `huma cover` resolves these **once before the loop** and injects them into **every** endpoint's hurl run (both manual and `--generate`). Captured/minted variables override `hurl_variables` on a name clash.
+Protected endpoints need an `Authorization: Bearer {{token}}` value that static `hurl_variables` can't supply (tokens expire, fixture IDs are created at runtime). `huma loop` resolves these **once before the loop** and injects them into **every** endpoint's hurl run (both generated and `--measure-only`). Captured/minted variables override `hurl_variables` on a name clash.
 
 **Capture (recommended)** — `testing.setup` points at a user-authored `.hurl` that logs in and captures the token (and any fixtures) via hurl's native `[Captures]`:
 
