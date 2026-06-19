@@ -1,0 +1,51 @@
+huma
+Copyright (c) 2026 park-jun-woo
+
+This product is licensed under the MIT License (see the LICENSE file).
+
+huma ("Hurl Master") is a coverage-ratchet CLI that drives AI agents to
+auto-generate wall-to-wall Hurl integration tests for SaaS backend APIs.
+
+------------------------------------------------------------------------------
+Third-party components
+------------------------------------------------------------------------------
+
+This software is built on top of, and when compiled bundles, the following
+third-party Go modules. Each remains under its own license and copyright,
+held by its respective authors.
+
+Apache License 2.0
+  - github.com/spf13/cobra                      v1.10.2
+  - github.com/inconshreveable/mousetrap        v1.1.0
+
+BSD 3-Clause License
+  - github.com/spf13/pflag                      v1.0.9
+  - golang.org/x/text                           v0.16.0   (via park-jun-woo/reins)
+
+BSD 2-Clause License
+  - github.com/russross/blackfriday/v2          v2.1.0    (build/docs dependency of cobra)
+  - gopkg.in/check.v1                            (test dependency of yaml.v3)
+
+MIT License
+  - gopkg.in/yaml.v3 / go.yaml.in/yaml/v3        v3.0.1 / v3.0.4
+  - github.com/cpuguy83/go-md2man/v2             v2.0.6    (build/docs dependency of cobra)
+
+MIT License (same author as huma)
+  - github.com/park-jun-woo/reins                          quest framework
+  - github.com/park-jun-woo/toulmin                        rule engine (via reins)
+
+Full license texts for these modules are available within their respective
+source repositories and in the local Go module cache.
+
+------------------------------------------------------------------------------
+Notes
+------------------------------------------------------------------------------
+
+No third-party source code or redistributable assets are embedded in this
+repository. The only third-party asset present in the working tree
+(test/admin/assets/fonts/NanumGothic.ttf) lives under a git-ignored, local-only
+test fixture and is neither tracked nor distributed with this project.
+
+"huma" here (github.com/park-jun-woo/huma, a test-generation CLI) is unrelated
+to github.com/danielgtaylor/huma (a Go API framework). No code is borrowed from
+that project.
